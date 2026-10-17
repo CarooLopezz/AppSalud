@@ -6,6 +6,57 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  users-service:
+    build: ./users-service
+    container_name: appsalud-users
+    environment:
+      PORT: 3001
+      MONGO_URI: mongodb://mongo:27017/appsalud_users
+    ports:
+      - "3001:3001"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  estudios-service:
+    build: ./estudios-service
+    container_name: appsalud-estudios
+    environment:
+      PORT: 3002
+      MONGO_URI: mongodb://mongo:27017/appsalud_estudios
+    ports:
+      - "3002:3002"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  recetas-service:
+    build: ./recetas-service
+    container_name: appsalud-recetas
+    environment:
+      PORT: 3003
+      MONGO_URI: mongodb://mongo:27017/appsalud_recetas
+    ports:
+      - "3003:3003"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: appsalud-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - users-service
+      - estudios-service
+      - recetas-service
 
 volumes:
   mongo_data:
