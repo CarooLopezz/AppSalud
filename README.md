@@ -14,3 +14,17 @@ Integrantes: Adriana Antunes (Usuarios y Médicos), Iara Fernández (Estudios), 
 | users-service | 3001 |
 | estudios-service | 3002 |
 | recetas-service | 3003 |
+| frontend | 5173 |
+| mongo | 27017 |
+
+## Levantar todo con Docker
+Requiere Docker Desktop abierto.
+
+```bash
+docker compose up -d --build   # construye y levanta mongo, los 3 servicios y el frontend
+docker compose ps              # ver estado
+docker compose logs -f users-service
+docker compose down            # apagar (agregar -v para borrar los datos de Mongo)
+```
+
+Dentro de Docker cada servicio recibe `PORT` y `MONGO_URI` (`mongodb://mongo:27017/appsalud_<servicio>`) como variables de entorno. `users-service` además recibe `JWT_SECRET`: se toma de un `.env` en la raíz del proyecto, o usa `clave_de_desarrollo` si no existe (solo para desarrollo).
