@@ -18,6 +18,7 @@ services:
     environment:
       PORT: 3001
       MONGO_URI: mongodb://mongo:27017/appsalud_users
+      JWT_SECRET: ${JWT_SECRET:-clave_de_desarrollo}
     ports:
       - "3001:3001"
     depends_on:
