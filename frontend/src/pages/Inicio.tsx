@@ -22,7 +22,7 @@ export default function Inicio() {
   return (
     <>
       <section className="bienvenida">
-        <h1>Tus estudios, recetas y médicos en un solo lugar</h1>
+        <h1>Tu salud, en un solo lugar</h1>
         <p>
           Cargá tus estudios, guardá tus recetas y anotá los datos de tus
           médicos para tenerlos siempre a mano.
