@@ -28,3 +28,12 @@ docker compose down            # apagar (agregar -v para borrar los datos de Mon
 ```
 
 Dentro de Docker cada servicio recibe `PORT` y `MONGO_URI` (`mongodb://mongo:27017/appsalud_<servicio>`) como variables de entorno. `users-service` además recibe `JWT_SECRET`: se toma de un `.env` en la raíz del proyecto, o usa `clave_de_desarrollo` si no existe (solo para desarrollo).
+
+## Frontend
+`cd frontend && npm run dev` → http://localhost:5173
+
+- `src/App.tsx`: rutas. Cada módulo reemplaza su `<EnConstruccion />` por su página real.
+- `src/components/Layout.tsx`: barra de navegación y pie, comunes a todas las pantallas.
+- `src/pages/`: una página por pantalla (`Inicio.tsx` ya está hecha).
+- `src/api/clients.ts`: `usersApi`, `estudiosApi` y `recetasApi` (axios). Si hay un token en `localStorage` (`appsalud_token`) lo mandan solo como `Authorization: Bearer`. Las URLs se cambian con un `.env` (ver `frontend/.env.example`).
+- Estilos en `src/index.css`, con los colores como variables en `:root` (tiene modo oscuro).
