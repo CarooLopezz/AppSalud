@@ -22,10 +22,11 @@ export default function Inicio() {
   return (
     <>
       <section className="bienvenida">
-        <h1>Tu salud, en un solo lugar</h1>
+        <h1>Cargá tus estudios, recetas y médicos en un solo lugar</h1>
         <p>
-          AppSalud es tu agenda personal de salud: estudios, recetas y médicos
-          organizados y siempre a mano.
+          Subí los resultados de tus estudios, guardá tus recetas y anotá los
+          datos de tus médicos. Así tenés toda tu información de salud ordenada
+          y la encontrás rápido cuando la necesitás, por ejemplo en una consulta.
         </p>
         <div className="acciones">
           <Link to="/registro" className="boton boton-primario">
