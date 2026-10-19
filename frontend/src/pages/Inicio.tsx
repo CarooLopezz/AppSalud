@@ -22,11 +22,10 @@ export default function Inicio() {
   return (
     <>
       <section className="bienvenida">
-        <h1>Cargá tus estudios, recetas y médicos en un solo lugar</h1>
+        <h1>Tus estudios, recetas y médicos en un solo lugar</h1>
         <p>
-          Subí los resultados de tus estudios, guardá tus recetas y anotá los
-          datos de tus médicos. Así tenés toda tu información de salud ordenada
-          y la encontrás rápido cuando la necesitás, por ejemplo en una consulta.
+          Cargá tus estudios, guardá tus recetas y anotá los datos de tus
+          médicos para tenerlos siempre a mano.
         </p>
         <div className="acciones">
           <Link to="/registro" className="boton boton-primario">
