@@ -1,0 +1,46 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type RecetaType {
+  id: ID!
+  pacienteId: String!
+  medicamento: String!
+  dosis: String!
+  frecuencia: String!
+  duracion: String!
+  indicaciones: String
+  fecha: String!
+}
+
+type Query {
+  recetas: [RecetaType!]!
+  receta(id: ID!): RecetaType!
+}
+
+type Mutation {
+  crearReceta(input: CreateRecetaInput!): RecetaType!
+  actualizarReceta(input: UpdateRecetaInput!): RecetaType!
+  eliminarReceta(id: ID!): Boolean!
+}
+
+input CreateRecetaInput {
+  pacienteId: String!
+  medicamento: String!
+  dosis: String!
+  frecuencia: String!
+  duracion: String!
+  indicaciones: String
+  fecha: String!
+}
+
+input UpdateRecetaInput {
+  pacienteId: String
+  medicamento: String
+  dosis: String
+  frecuencia: String
+  duracion: String
+  indicaciones: String
+  fecha: String
+  id: String!
+}
