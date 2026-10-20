@@ -15,11 +15,15 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
   imports: [
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      // En producción (Docker) el esquema queda en memoria: no hay carpeta src
+      autoSchemaFile:
+        process.env.NODE_ENV === 'production'
+          ? true
+          : join(process.cwd(), 'src/schema.gql'),
     }),
 
     MongooseModule.forRoot(
-      process.env.MONGODB_URI ?? 'mongodb://localhost:27017/appsalud',
+      process.env.MONGO_URI ?? 'mongodb://localhost:27017/appsalud',
     ),
 
     RecetasModule,
