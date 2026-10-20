@@ -8,8 +8,8 @@ export class RecetaType {
   @Field()
   pacienteId: string;
 
-  @Field()
-  medicamento: string;
+  @Field(() => ID)
+  medicamentoId: string;
 
   @Field()
   dosis: string;

@@ -1,12 +1,12 @@
-import { Field, InputType } from '@nestjs/graphql';
+import { Field, ID, InputType } from '@nestjs/graphql';
 
 @InputType()
 export class CreateRecetaInput {
   @Field()
   pacienteId: string;
 
-  @Field()
-  medicamento: string;
+  @Field(() => ID)
+  medicamentoId: string;
 
   @Field()
   dosis: string;

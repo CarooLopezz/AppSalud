@@ -9,7 +9,7 @@ export class Receta {
   pacienteId: string;
 
   @Prop({ required: true })
-  medicamento: string;
+  medicamentoId: string;
 
   @Prop({ required: true })
   dosis: string;
