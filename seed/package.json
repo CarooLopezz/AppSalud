@@ -1,0 +1,14 @@
+{
+  "name": "appsalud-seed",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Carga datos iniciales de ejemplo en las bases de AppSalud",
+  "type": "module",
+  "scripts": {
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "mongodb": "^6.21.0"
+  }
+}
