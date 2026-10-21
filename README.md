@@ -58,3 +58,9 @@ Usuarios de ejemplo, todos con contraseña `demo1234`:
 | laura.mendez@appsalud.com | medico | — |
 
 Carga en las mismas bases que usa el docker-compose: `appsalud_users`, `appsalud_estudios` y `appsalud_recetas`. Si corrés los servicios sin Docker, usá esos mismos nombres en su `MONGO_URI`, o cambialos en el seed con `MONGO_URL`, `USERS_DB`, `ESTUDIOS_DB` y `RECETAS_DB`.
+
+Tests del seed (necesitan Mongo en `localhost:27017` o en `MONGO_URL`; usan bases propias que se borran al terminar):
+
+```bash
+cd seed && npm test
+```

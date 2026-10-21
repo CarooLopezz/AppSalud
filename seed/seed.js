@@ -3,22 +3,18 @@
 // ejemplo y reemplaza sus estudios y recetas, sin duplicar nada.
 import bcrypt from 'bcryptjs'
 import { MongoClient } from 'mongodb'
-
-const MONGO_URL = process.env.MONGO_URL ?? 'mongodb://localhost:27017'
-const USERS_DB = process.env.USERS_DB ?? 'appsalud_users'
-const ESTUDIOS_DB = process.env.ESTUDIOS_DB ?? 'appsalud_estudios'
-const RECETAS_DB = process.env.RECETAS_DB ?? 'appsalud_recetas'
+import { pathToFileURL } from 'node:url'
 
 // Misma contraseña para todos los usuarios de ejemplo
-const PASSWORD = 'demo1234'
+export const PASSWORD = 'demo1234'
 
-const usuarios = [
+export const usuarios = [
   { nombre: 'Ana Pérez', email: 'ana@appsalud.com', rol: 'paciente' },
   { nombre: 'Juan Gómez', email: 'juan@appsalud.com', rol: 'paciente' },
   { nombre: 'Laura Méndez', email: 'laura.mendez@appsalud.com', rol: 'medico' },
 ]
 
-const medicamentos = [
+export const medicamentos = [
   {
     nombre: 'Ibuprofeno',
     principioActivo: 'Ibuprofeno',
@@ -46,7 +42,7 @@ const medicamentos = [
 ]
 
 // Estudios y recetas de cada paciente (por email y nombre de medicamento)
-const estudiosPorPaciente = {
+export const estudiosPorPaciente = {
   'ana@appsalud.com': [
     {
       tipo: 'Análisis de sangre',
@@ -93,7 +89,7 @@ const estudiosPorPaciente = {
   ],
 }
 
-const recetasPorPaciente = {
+export const recetasPorPaciente = {
   'ana@appsalud.com': [
     {
       medicamento: 'Levotiroxina',
@@ -131,14 +127,19 @@ const recetasPorPaciente = {
   ],
 }
 
-async function main() {
-  const client = new MongoClient(MONGO_URL, { serverSelectionTimeoutMS: 5000 })
+export async function seed({
+  mongoUrl = 'mongodb://localhost:27017',
+  usersDb = 'appsalud_users',
+  estudiosDb = 'appsalud_estudios',
+  recetasDb = 'appsalud_recetas',
+} = {}) {
+  const client = new MongoClient(mongoUrl, { serverSelectionTimeoutMS: 5000 })
   await client.connect()
   const ahora = new Date()
 
   try {
     // ---- Usuarios ----
-    const users = client.db(USERS_DB).collection('users')
+    const users = client.db(usersDb).collection('users')
     const hash = await bcrypt.hash(PASSWORD, 10)
     const idPorEmail = {}
     for (const u of usuarios) {
@@ -152,10 +153,9 @@ async function main() {
       )
       idPorEmail[u.email] = doc._id
     }
-    console.log(`Usuarios: ${usuarios.length}`)
 
     // ---- Medicamentos ----
-    const meds = client.db(RECETAS_DB).collection('medicamentos')
+    const meds = client.db(recetasDb).collection('medicamentos')
     const idPorMedicamento = {}
     for (const m of medicamentos) {
       const doc = await meds.findOneAndUpdate(
@@ -165,10 +165,9 @@ async function main() {
       )
       idPorMedicamento[m.nombre] = doc._id
     }
-    console.log(`Medicamentos: ${medicamentos.length}`)
 
     // ---- Estudios (estudios-service guarda usuarioId como ObjectId) ----
-    const estudios = client.db(ESTUDIOS_DB).collection('estudios')
+    const estudios = client.db(estudiosDb).collection('estudios')
     const pacientes = Object.keys(estudiosPorPaciente).map((e) => idPorEmail[e])
     await estudios.deleteMany({ usuarioId: { $in: pacientes } })
     const nuevosEstudios = Object.entries(estudiosPorPaciente).flatMap(
@@ -183,10 +182,9 @@ async function main() {
         })),
     )
     await estudios.insertMany(nuevosEstudios)
-    console.log(`Estudios: ${nuevosEstudios.length}`)
 
     // ---- Recetas (recetas-service guarda los ids como texto) ----
-    const recetas = client.db(RECETAS_DB).collection('recetas')
+    const recetas = client.db(recetasDb).collection('recetas')
     const pacienteIds = Object.keys(recetasPorPaciente).map((e) =>
       idPorEmail[e].toString(),
     )
@@ -202,16 +200,36 @@ async function main() {
         })),
     )
     await recetas.insertMany(nuevasRecetas)
-    console.log(`Recetas: ${nuevasRecetas.length}`)
 
-    console.log(`\nListo. Usuarios de ejemplo (contraseña: ${PASSWORD}):`)
-    for (const u of usuarios) console.log(`  ${u.email}  (${u.rol})`)
+    return {
+      usuarios: usuarios.length,
+      medicamentos: medicamentos.length,
+      estudios: nuevosEstudios.length,
+      recetas: nuevasRecetas.length,
+    }
   } finally {
     await client.close()
   }
 }
 
-main().catch((error) => {
-  console.error('No se pudieron cargar los datos:', error.message)
-  process.exit(1)
-})
+// Solo corre si se ejecuta `node seed.js` (los tests importan seed() sin ejecutarlo)
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  seed({
+    mongoUrl: process.env.MONGO_URL,
+    usersDb: process.env.USERS_DB,
+    estudiosDb: process.env.ESTUDIOS_DB,
+    recetasDb: process.env.RECETAS_DB,
+  })
+    .then((total) => {
+      console.log(`Usuarios: ${total.usuarios}`)
+      console.log(`Medicamentos: ${total.medicamentos}`)
+      console.log(`Estudios: ${total.estudios}`)
+      console.log(`Recetas: ${total.recetas}`)
+      console.log(`\nListo. Usuarios de ejemplo (contraseña: ${PASSWORD}):`)
+      for (const u of usuarios) console.log(`  ${u.email}  (${u.rol})`)
+    })
+    .catch((error) => {
+      console.error('No se pudieron cargar los datos:', error.message)
+      process.exit(1)
+    })
+}

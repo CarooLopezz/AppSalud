@@ -5,7 +5,8 @@
   "description": "Carga datos iniciales de ejemplo en las bases de AppSalud",
   "type": "module",
   "scripts": {
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "test": "node --test"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
