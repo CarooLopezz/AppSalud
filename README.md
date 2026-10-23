@@ -27,7 +27,24 @@ docker compose logs -f users-service
 docker compose down            # apagar (agregar -v para borrar los datos de Mongo)
 ```
 
-Dentro de Docker cada servicio recibe `PORT` y `MONGO_URI` (`mongodb://mongo:27017/appsalud_<servicio>`) como variables de entorno. `users-service` además recibe `JWT_SECRET`: se toma de un `.env` en la raíz del proyecto, o usa `clave_de_desarrollo` si no existe (solo para desarrollo).
+La app queda en **https://localhost**. Es la única puerta de entrada: el nginx del frontend sirve la app y reenvía `/api/users`, `/api/estudios` y `/api/recetas` a cada servicio. Los servicios no publican sus puertos (3001-3003), así que desde afuera de Docker solo se llega a ellos por HTTPS. Si entrás por `http://localhost`, te redirige a HTTPS.
+
+El certificado es autofirmado y se genera solo la primera vez. Por eso el navegador avisa que la conexión "no es privada": tocá **Configuración avanzada → Continuar a localhost**.
+
+Dentro de Docker cada servicio recibe `PORT` y `MONGO_URI` (`mongodb://mongo:27017/appsalud_<servicio>`) como variables de entorno. `users-service` y `estudios-service` además reciben `JWT_SECRET`: se toma de un `.env` en la raíz del proyecto, o usa `clave_de_desarrollo` si no existe (solo para desarrollo).
+
+## Seguridad: HTTPS y Wireshark
+Con HTTPS, la contraseña del login y el token viajan cifrados: en Wireshark solo se ve "TLS Application Data". En la base, las contraseñas se guardan encriptadas con bcrypt.
+
+**Test automático** (con la app levantada en Docker y Wireshark instalado). Captura el tráfico mientras se registra un usuario, hace login y pide sus estudios, y verifica que ni la contraseña, ni el email, ni el token aparezcan en la captura. También verifica que por HTTP solo haya una redirección y que los puertos 3001-3003 estén cerrados:
+
+```
+node --test tests/wireshark.test.mjs
+```
+
+**Para verlo a mano en Wireshark:** elegí la interfaz *Adapter for loopback traffic capture*, filtrá con `tcp.port == 443`, hacé login en https://localhost y fijate que los paquetes digan *TLS* y *Application Data*, sin ningún `POST /auth/login` legible.
+
+> Ojo: con `npm run start:dev` (sin Docker) los servicios siguen en `http://localhost:3001-3003` y ahí la contraseña **sí** se ve. Eso es solo para desarrollar; la entrega y la demo se hacen con Docker.
 
 ## Frontend
 `cd frontend && npm run dev` → http://localhost:5173
@@ -43,3 +60,30 @@ Dentro de Docker cada servicio recibe `PORT` y `MONGO_URI` (`mongodb://mongo:270
 - Inicio de sesión: `POST /auth/login`; devuelve `access_token`.
 - Directorio: `GET /users/medicos` requiere `Authorization: Bearer <access_token>` y devuelve nombre y correo de las cuentas con rol `medico`.
 - Para ejecutar las pruebas del frontend: `cd frontend && npm test`. Para las del servicio de usuarios: `cd users-service && npm test`.
+
+## Datos de ejemplo (seed)
+Carga usuarios, medicamentos, estudios y recetas de ejemplo para probar la app. Se puede correr varias veces: no duplica nada, actualiza los usuarios y medicamentos de ejemplo y reemplaza sus estudios y recetas.
+
+```bash
+# Con Docker (con mongo levantado)
+docker compose run --rm seed
+
+# Sin Docker (con un Mongo local en localhost:27017)
+cd seed && npm install && npm run seed
+```
+
+Usuarios de ejemplo, todos con contraseña `demo1234`:
+
+| Email | Rol | Tiene |
+|---|---|---|
+| ana@appsalud.com | paciente | 3 estudios, 2 recetas |
+| juan@appsalud.com | paciente | 2 estudios, 2 recetas |
+| laura.mendez@appsalud.com | medico | — |
+
+Carga en las mismas bases que usa el docker-compose: `appsalud_users`, `appsalud_estudios` y `appsalud_recetas`. Si corrés los servicios sin Docker, usá esos mismos nombres en su `MONGO_URI`, o cambialos en el seed con `MONGO_URL`, `USERS_DB`, `ESTUDIOS_DB` y `RECETAS_DB`.
+
+Tests del seed (necesitan Mongo en `localhost:27017` o en `MONGO_URL`; usan bases propias que se borran al terminar):
+
+```bash
+cd seed && npm test
+```

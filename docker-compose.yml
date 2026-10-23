@@ -19,8 +19,6 @@ services:
       PORT: 3001
       MONGO_URI: mongodb://mongo:27017/appsalud_users
       JWT_SECRET: ${JWT_SECRET:-clave_de_desarrollo}
-    ports:
-      - "3001:3001"
     depends_on:
       mongo:
         condition: service_healthy
@@ -32,8 +30,6 @@ services:
       PORT: 3002
       MONGO_URI: mongodb://mongo:27017/appsalud_estudios
       JWT_SECRET: ${JWT_SECRET:-clave_de_desarrollo}
-    ports:
-      - "3002:3002"
     depends_on:
       mongo:
         condition: service_healthy
@@ -44,8 +40,6 @@ services:
     environment:
       PORT: 3003
       MONGO_URI: mongodb://mongo:27017/appsalud_recetas
-    ports:
-      - "3003:3003"
     depends_on:
       mongo:
         condition: service_healthy
@@ -53,12 +47,29 @@ services:
   frontend:
     build: ./frontend
     container_name: appsalud-frontend
+    # Única puerta de entrada: https://localhost (el 80 redirige a HTTPS).
+    # Los servicios no publican puertos: solo se llega a ellos a través de acá.
     ports:
-      - "5173:80"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certs:/etc/nginx/certs
     depends_on:
       - users-service
       - estudios-service
       - recetas-service
 
+  # Carga los datos de ejemplo. No arranca con `up`: se corre a mano con
+  # docker compose run --rm seed
+  seed:
+    build: ./seed
+    profiles: ["seed"]
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+    depends_on:
+      mongo:
+        condition: service_healthy
+
 volumes:
   mongo_data:
+  certs:
