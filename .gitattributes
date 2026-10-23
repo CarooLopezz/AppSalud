@@ -1,0 +1,2 @@
+# Los scripts que corren dentro de Linux (Docker) tienen que quedar con LF
+*.sh text eol=lf
