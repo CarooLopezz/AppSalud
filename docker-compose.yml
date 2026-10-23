@@ -53,7 +53,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - certs:/etc/nginx/certs
+      # Certificados: si certs/ está vacía se genera uno autofirmado.
+      # Para el candado en el navegador, ver "Certificado de confianza" en el README.
+      - ./certs:/etc/nginx/certs
     depends_on:
       - users-service
       - estudios-service
@@ -72,4 +74,3 @@ services:
 
 volumes:
   mongo_data:
-  certs:
