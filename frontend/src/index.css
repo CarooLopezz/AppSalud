@@ -142,6 +142,27 @@ a {
   background: var(--primario-suave);
 }
 
+.sesion {
+  display: flex;
+  align-items: center;
+}
+
+.enlace-boton {
+  padding: 0.4rem 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primario);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.enlace-boton:hover {
+  background: var(--primario-suave);
+}
+
 .pie {
   padding: 1.5rem 1rem;
   text-align: center;
@@ -245,6 +266,160 @@ a {
   color: var(--primario);
 }
 
+/* ---- Formularios de cuenta ---- */
+.formulario-pagina {
+  width: min(100%, 28rem);
+  margin: 1rem auto;
+  padding: 2rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.formulario-pagina h1 {
+  font-size: 1.75rem;
+}
+
+.texto-suave,
+.ayuda-campo {
+  color: var(--texto-suave);
+}
+
+.formulario {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.formulario label,
+.buscador span {
+  font-size: 0.925rem;
+  font-weight: 600;
+}
+
+.formulario input,
+.buscador input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.formulario .boton {
+  margin-top: 0.75rem;
+  cursor: pointer;
+}
+
+.formulario .boton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.ayuda-campo {
+  font-size: 0.825rem;
+}
+
+.enlace-formulario {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  color: var(--texto-suave);
+}
+
+.mensaje-error,
+.mensaje-exito {
+  margin: 0.5rem 0;
+  padding: 0.75rem;
+  border-radius: 8px;
+}
+
+.mensaje-error {
+  color: #a32c2c;
+  background: #fff0f0;
+}
+
+.mensaje-exito {
+  color: #176346;
+  background: #e7f6ef;
+}
+
+/* ---- Directorio de médicos ---- */
+.encabezado-pagina {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sobrelinea {
+  margin-bottom: 0.35rem;
+  color: var(--primario);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.buscador {
+  display: grid;
+  gap: 0.4rem;
+  width: min(100%, 20rem);
+}
+
+.lista-medicos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.medico {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.medico h2 {
+  font-size: 1.05rem;
+}
+
+.medico-avatar {
+  display: grid;
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primario-suave);
+  color: var(--primario);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.estado-vacio {
+  padding: 2rem;
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio);
+  text-align: center;
+}
+
+.estado-vacio p {
+  margin-bottom: 0;
+  color: var(--texto-suave);
+}
+
 /* ---- Avisos (en construcción / 404) ---- */
 .aviso {
   max-width: 32rem;
@@ -259,5 +434,15 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .tarjeta {
     transition: none;
+  }
+
+  @media (max-width: 600px) {
+    .barra {
+      justify-content: center;
+    }
+
+    .formulario-pagina {
+      padding: 1.25rem;
+    }
   }
 }

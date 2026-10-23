@@ -49,11 +49,17 @@ node --test tests/wireshark.test.mjs
 ## Frontend
 `cd frontend && npm run dev` → http://localhost:5173
 
-- `src/App.tsx`: rutas. Cada módulo reemplaza su `<EnConstruccion />` por su página real.
+- `src/App.tsx`: rutas; estudios, recetas, perfil y el directorio de médicos requieren sesión.
 - `src/components/Layout.tsx`: barra de navegación y pie, comunes a todas las pantallas.
-- `src/pages/`: una página por pantalla (`Inicio.tsx` ya está hecha).
+- `src/pages/`: pantallas de inicio, registro, inicio de sesión y directorio de médicos.
 - `src/api/clients.ts`: `usersApi`, `estudiosApi` y `recetasApi` (axios). Si hay un token en `localStorage` (`appsalud_token`) lo mandan solo como `Authorization: Bearer`. Las URLs se cambian con un `.env` (ver `frontend/.env.example`).
 - Estilos en `src/index.css`, con los colores como variables en `:root` (tiene modo oscuro).
+
+## Usuarios y médicos
+- Registro: `POST /auth/register` con `nombre`, `email` y `password` (mínimo 6 caracteres). Los registros públicos tienen el rol `paciente`.
+- Inicio de sesión: `POST /auth/login`; devuelve `access_token`.
+- Directorio: `GET /users/medicos` requiere `Authorization: Bearer <access_token>` y devuelve nombre y correo de las cuentas con rol `medico`.
+- Para ejecutar las pruebas del frontend: `cd frontend && npm test`. Para las del servicio de usuarios: `cd users-service && npm test`.
 
 ## Datos de ejemplo (seed)
 Carga usuarios, medicamentos, estudios y recetas de ejemplo para probar la app. Se puede correr varias veces: no duplica nada, actualiza los usuarios y medicamentos de ejemplo y reemplaza sus estudios y recetas.

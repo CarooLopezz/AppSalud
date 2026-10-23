@@ -2,6 +2,11 @@ import { Link } from 'react-router-dom'
 
 const accesos = [
   {
+    to: '/medicos',
+    titulo: 'Médicos',
+    texto: 'Consultá los profesionales registrados y encontrá su contacto. ',
+  },
+  {
     to: '/estudios',
     titulo: 'Estudios',
     texto: 'Guardá tus análisis y estudios médicos y consultalos cuando los necesites.',
