@@ -46,6 +46,20 @@ node --test tests/wireshark.test.mjs
 
 > Ojo: con `npm run start:dev` (sin Docker) los servicios siguen en `http://localhost:3001-3003` y ahí la contraseña **sí** se ve. Eso es solo para desarrollar; la entrega y la demo se hacen con Docker.
 
+## Logs de errores
+Los tres servicios anotan cada error en el log con su servicio, ruta y motivo (`src/common/todos-los-errores.filter.ts`):
+
+- **4xx** (error del que hizo el pedido: datos inválidos, sin token, no existe) → `WARN`, por ejemplo `POST /auth/login → 401: Credenciales inválidas`.
+- **5xx** (error del servidor) → `ERROR`, con el detalle completo. Al usuario solo le llega "Error interno del servidor".
+- También se anotan los errores de GraphQL (recetas-service) y los que pasan fuera de un pedido (promesas sin `catch`).
+- **Nunca** se anotan el cuerpo del pedido, los headers ni la query: en los logs no quedan contraseñas, tokens ni emails.
+
+Para verlos con Docker:
+
+```
+docker compose logs -f users-service estudios-service recetas-service
+```
+
 ## Frontend
 `cd frontend && npm run dev` → http://localhost:5173
 
