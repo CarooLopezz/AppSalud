@@ -1,0 +1,75 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type RecetaType {
+  id: ID!
+  pacienteId: String!
+  medicamentoId: ID!
+  dosis: String!
+  frecuencia: String!
+  duracion: String!
+  indicaciones: String
+  fecha: String!
+  medicamento: MedicamentoType!
+}
+
+type MedicamentoType {
+  id: ID!
+  nombre: String!
+  principioActivo: String
+  presentacion: String
+  descripcion: String
+}
+
+type Query {
+  recetas: [RecetaType!]!
+  receta(id: ID!): RecetaType!
+  medicamentos: [MedicamentoType!]!
+  medicamento(id: ID!): MedicamentoType!
+}
+
+type Mutation {
+  crearReceta(input: CreateRecetaInput!): RecetaType!
+  actualizarReceta(input: UpdateRecetaInput!): RecetaType!
+  eliminarReceta(id: ID!): Boolean!
+  crearMedicamento(input: CreateMedicamentoInput!): MedicamentoType!
+  actualizarMedicamento(input: UpdateMedicamentoInput!): MedicamentoType!
+  eliminarMedicamento(id: ID!): Boolean!
+}
+
+input CreateRecetaInput {
+  pacienteId: String!
+  medicamentoId: ID!
+  dosis: String!
+  frecuencia: String!
+  duracion: String!
+  indicaciones: String
+  fecha: String!
+}
+
+input UpdateRecetaInput {
+  pacienteId: String
+  medicamentoId: ID
+  dosis: String
+  frecuencia: String
+  duracion: String
+  indicaciones: String
+  fecha: String
+  id: ID!
+}
+
+input CreateMedicamentoInput {
+  nombre: String!
+  principioActivo: String
+  presentacion: String
+  descripcion: String
+}
+
+input UpdateMedicamentoInput {
+  nombre: String
+  principioActivo: String
+  presentacion: String
+  descripcion: String
+  id: String!
+}
