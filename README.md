@@ -46,6 +46,22 @@ node --test tests/wireshark.test.mjs
 
 > Ojo: con `npm run start:dev` (sin Docker) los servicios siguen en `http://localhost:3001-3003` y ahí la contraseña **sí** se ve. Eso es solo para desarrollar; la entrega y la demo se hacen con Docker.
 
+### Certificado de confianza (candado en el navegador)
+Sin esto, la conexión igual está cifrada, pero el navegador muestra "No seguro" porque el certificado es autofirmado. Con [mkcert](https://github.com/FiloSottile/mkcert) se crea un certificado que tu compu reconoce como de confianza. Se hace **una vez por compu**, en PowerShell, desde la raíz del proyecto:
+
+```
+winget install FiloSottile.mkcert
+mkcert -install
+mkdir certs
+mkcert -cert-file certs/server.crt -key-file certs/server.key localhost 127.0.0.1 ::1
+docker compose restart frontend
+```
+
+- `winget install`: después de instalarlo, abrí una terminal nueva para que reconozca el comando `mkcert`.
+- `mkcert -install`: Windows pregunta si confiás en la autoridad "mkcert": aceptá. Queda solo en tu compu.
+- La carpeta `certs/` no se sube a GitHub. Si está vacía, nginx genera el certificado autofirmado como antes.
+- Después de reiniciar, cerrá y volvé a abrir el navegador y entrá a https://localhost: tiene que aparecer el candado.
+
 ## Logs de errores
 Los tres servicios anotan cada error en el log con su servicio, ruta y motivo (`src/common/todos-los-errores.filter.ts`):
 
