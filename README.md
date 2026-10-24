@@ -76,6 +76,22 @@ Para verlos con Docker:
 docker compose logs -f users-service estudios-service recetas-service
 ```
 
+## Tests
+Desde la carpeta de cada parte (en PowerShell, un comando por línea). Los e2e necesitan Mongo en `localhost:27017` (por ejemplo `docker compose up -d mongo`) y usan bases `appsalud_test_*`, separadas de las reales.
+
+| Qué | Dónde | Comando |
+|---|---|---|
+| Unitarios de un servicio | `users-service`, `estudios-service`, `recetas-service` | `npm test` |
+| E2E de un servicio (levantan el servicio y le hacen pedidos) | ídem | `npm run test:e2e` |
+| Pantallas del frontend | `frontend` | `npm test` |
+| Seed | `seed` | `npm test` |
+| Tráfico de red / Wireshark (con la app en Docker) | raíz del proyecto | `node --test tests/wireshark.test.mjs` |
+
+Qué cubren los de usuarios y médicos (AP-98):
+- **users-service e2e:** registro y login (contraseña nunca devuelta y guardada con bcrypt, email repetido, datos inválidos, credenciales incorrectas) y `GET /users/medicos` (sin token, token inventado, vencido, firmado con otra clave o incompleto → 401; con token, solo médicos ordenados por nombre y sin contraseña; nadie puede registrarse como médico).
+- **users-service unitarios:** `UsersService` (bcrypt, emails en minúsculas, duplicados, búsqueda de médicos).
+- **frontend:** pantalla de Médicos (lista, buscador, vacío, errores) y errores de login y registro (mensajes del servidor, botón deshabilitado mientras espera, volver a la sección protegida, cerrar sesión).
+
 ## Frontend
 `cd frontend && npm run dev` → http://localhost:5173
 
