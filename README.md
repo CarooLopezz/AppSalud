@@ -62,6 +62,23 @@ docker compose restart frontend
 - La carpeta `certs/` no se sube a GitHub. Si está vacía, nginx genera el certificado autofirmado como antes.
 - Después de reiniciar, cerrá y volvé a abrir el navegador y entrá a https://localhost: tiene que aparecer el candado.
 
+## Límite de intentos (fuerza bruta)
+Para que nadie pueda adivinar una contraseña probando miles de veces, `users-service` limita los intentos de `/auth/login` y `/auth/register`. Pasado el límite, responde **429 "Too many requests"** y hay que esperar.
+
+- Por defecto: **5 intentos por minuto** por IP. Se cambia con `THROTTLE_LIMIT` y `THROTTLE_TTL` (ms).
+- Detrás de nginx, el límite cuenta por la IP real de cada cliente (`trust proxy`), no a todos juntos.
+
+**Un ataque de fuerza bruta** sería mandar muchos intentos de login seguidos. Para verlo, con la app en Docker (PowerShell):
+
+```
+'{"email":"ana@appsalud.com","password":"mala"}' | Out-File -Encoding ascii "$env:TEMP.json"
+1..7 | ForEach-Object { curl.exe -k -s -o NUL -w "%{http_code}`n" -X POST https://localhost/api/users/auth/login -H "Content-Type: application/json" --data "@$env:TEMP.json" }
+```
+
+Los primeros intentos dan `401` (contraseña incorrecta) y a partir del sexto dan `429`: el servidor dejó de aceptarlos.
+
+> Wireshark **no** hace este ataque: solo observa el tráfico. El ataque lo manda otra herramienta o un script; Wireshark sirve para ver que, aun así, la contraseña viaja cifrada.
+
 ## Logs de errores
 Los tres servicios anotan cada error en el log con su servicio, ruta y motivo (`src/common/todos-los-errores.filter.ts`):
 
