@@ -2,6 +2,11 @@ import { Link } from 'react-router-dom'
 
 const accesos = [
   {
+    to: '/agenda',
+    titulo: 'Agenda de médicos',
+    texto: 'Solicitá, consultá y gestioná tus turnos médicos.',
+  },
+  {
     to: '/medicos',
     titulo: 'Médicos',
     texto: 'Consultá los profesionales registrados y encontrá su contacto. ',

@@ -4,6 +4,7 @@ import { useAuth } from '../auth/useAuth.ts'
 const secciones = [
   { to: '/', label: 'Inicio', end: true },
   { to: '/medicos', label: 'Médicos' },
+  { to: '/agenda', label: 'Agenda' },
   { to: '/estudios', label: 'Estudios' },
   { to: '/recetas', label: 'Recetas' },
   { to: '/perfil', label: 'Mi perfil' },

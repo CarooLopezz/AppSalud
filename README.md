@@ -124,6 +124,13 @@ Qué cubren los de usuarios y médicos (AP-98):
 - Directorio: `GET /users/medicos` requiere `Authorization: Bearer <access_token>` y devuelve nombre y correo de las cuentas con rol `medico`.
 - Para ejecutar las pruebas del frontend: `cd frontend && npm test`. Para las del servicio de usuarios: `cd users-service && npm test`.
 
+## Agenda de médicos
+- La agenda está en `/agenda` y requiere iniciar sesión.
+- Los pacientes pueden solicitar turnos, consultar los propios, modificar solicitudes pendientes y cancelar turnos.
+- Los médicos consultan los turnos asignados y pueden confirmarlos o cancelarlos.
+- Endpoints protegidos del `users-service`: `GET /appointments`, `GET /appointments/:id`, `POST /appointments`, `PATCH /appointments/:id`, `PATCH /appointments/:id/estado` y `DELETE /appointments/:id`.
+- MongoDB conserva paciente, médico, fecha, motivo y estado. No se permite reservar un horario ya ocupado para el mismo médico; los turnos se cancelan conservando el registro para auditoría.
+
 ## Datos de ejemplo (seed)
 Carga usuarios, medicamentos, estudios y recetas de ejemplo para probar la app. Se puede correr varias veces: no duplica nada, actualiza los usuarios y medicamentos de ejemplo y reemplaza sus estudios y recetas.
 
