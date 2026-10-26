@@ -16,6 +16,20 @@ export class RecetasService {
   ) {}
 
   async crear(input: CreateRecetaInput): Promise<RecetaDocument> {
+    const tiposPermitidos = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+    ];
+
+    if (input.tipoArchivo && !tiposPermitidos.includes(input.tipoArchivo)) {
+      throw new Error('Tipo de archivo no permitido');
+    }
+
+    if (input.tipoArchivo && !input.archivo) {
+      throw new Error('Debe enviar el archivo');
+    }
+
     const receta = new this.recetaModel(input);
     return receta.save();
   }

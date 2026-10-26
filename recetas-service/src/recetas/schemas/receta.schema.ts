@@ -25,6 +25,12 @@ export class Receta {
 
   @Prop({ required: true })
   fecha: string;
+
+  @Prop()
+  archivo?: string;
+
+  @Prop()
+  tipoArchivo?: string;
 }
 
 export const RecetaSchema = SchemaFactory.createForClass(Receta);
