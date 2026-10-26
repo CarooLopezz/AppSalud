@@ -27,6 +27,7 @@ type MedicamentoType {
 type Query {
   recetas: [RecetaType!]!
   receta(id: ID!): RecetaType!
+  recetasPorVencer: [RecetaType!]!
   medicamentos: [MedicamentoType!]!
   medicamento(id: ID!): MedicamentoType!
 }
