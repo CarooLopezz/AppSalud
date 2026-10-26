@@ -11,6 +11,8 @@ type RecetaType {
   duracion: String!
   indicaciones: String
   fecha: String!
+  archivo: String
+  tipoArchivo: String
   medicamento: MedicamentoType!
 }
 
@@ -46,6 +48,8 @@ input CreateRecetaInput {
   duracion: String!
   indicaciones: String
   fecha: String!
+  archivo: String
+  tipoArchivo: String
 }
 
 input UpdateRecetaInput {
@@ -56,6 +60,8 @@ input UpdateRecetaInput {
   duracion: String
   indicaciones: String
   fecha: String
+  archivo: String
+  tipoArchivo: String
   id: ID!
 }
 
