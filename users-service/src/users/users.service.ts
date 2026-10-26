@@ -36,4 +36,8 @@ export class UsersService {
       .sort({ nombre: 1 })
       .lean();
   }
+
+  findById(id: string) {
+    return this.userModel.findById(id).select('nombre email rol').lean();
+  }
 }

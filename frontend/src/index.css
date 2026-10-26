@@ -420,6 +420,129 @@ a {
   color: var(--texto-suave);
 }
 
+/* ---- Agenda de turnos ---- */
+.agenda-solicitud,
+.agenda-listado {
+  margin-top: 2rem;
+}
+
+.agenda-solicitud {
+  padding: 1.5rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.agenda-solicitud h2,
+.agenda-listado > h2 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+}
+
+.agenda-formulario {
+  max-width: 38rem;
+}
+
+.formulario select,
+.formulario textarea {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.formulario textarea {
+  resize: vertical;
+}
+
+.lista-turnos {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.turno {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.turno-contenido {
+  min-width: 0;
+}
+
+.turno-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.turno-titulo h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.turno-fecha {
+  margin: 0.4rem 0;
+  color: var(--texto-suave);
+  font-size: 0.925rem;
+}
+
+.turno-motivo {
+  margin: 0;
+}
+
+.estado-turno {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--primario-suave);
+  color: var(--primario);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.estado-cancelado {
+  background: #fff0f0;
+  color: #a32c2c;
+}
+
+.estado-confirmado {
+  background: #e7f6ef;
+  color: #176346;
+}
+
+.turno-acciones {
+  margin-top: 0;
+}
+
+.turno-edicion {
+  width: 100%;
+  margin-top: 0;
+}
+
+.boton-peligro {
+  color: #a32c2c;
+}
+
+.boton-peligro:hover {
+  border-color: #a32c2c;
+}
+
 /* ---- Avisos (en construcción / 404) ---- */
 .aviso {
   max-width: 32rem;

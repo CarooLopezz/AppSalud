@@ -6,10 +6,15 @@ import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
 import { UsersController } from '../users/users.controller.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Appointment, AppointmentSchema } from '../appointments/appointment.schema.js';
+import { AppointmentsController } from '../appointments/appointments.controller.js';
+import { AppointmentsService } from '../appointments/appointments.service.js';
 
 @Module({
   imports: [
     UsersModule,
+    MongooseModule.forFeature([{ name: Appointment.name, schema: AppointmentSchema }]),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -18,7 +23,7 @@ import { JwtAuthGuard } from './jwt-auth.guard.js';
       }),
     }),
   ],
-  providers: [AuthService, JwtAuthGuard],
-  controllers: [AuthController, UsersController],
+  providers: [AuthService, JwtAuthGuard, AppointmentsService],
+  controllers: [AuthController, UsersController, AppointmentsController],
 })
 export class AuthModule {}
