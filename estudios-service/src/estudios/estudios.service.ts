@@ -1,3 +1,4 @@
+import { FiltrarEstudiosDto } from './dto/filtrar-estudios.dto.js';
 import {
   BadRequestException,
   Injectable,
@@ -8,6 +9,11 @@ import { Model, Types } from 'mongoose';
 import { Estudio, EstudioDocument } from './estudio.schema.js';
 import { CreateEstudioDto } from './dto/create-estudio.dto.js';
 import { UpdateEstudioDto } from './dto/update-estudio.dto.js';
+
+// Escapa caracteres especiales de regex
+function escaparRegex(texto: string): string {
+  return texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 // Inicio del día en UTC
 function inicioDelDia(fecha: string | Date): Date {
@@ -53,18 +59,61 @@ export class EstudiosService {
     return estudio.save();
   }
 
-  // Obtener todos los estudios del usuario
-  async findAll(usuarioId: string): Promise<EstudioDocument[]> {
-    return this.estudioModel
-      .find({ usuarioId: new Types.ObjectId(usuarioId) })
-      .sort({ fecha: -1 })
-      .exec();
+  // AP-84: sin filtros devuelve todos los estudios del usuario
+  async findAll(
+    usuarioId: string,
+    filtros: FiltrarEstudiosDto = {},
+  ): Promise<EstudioDocument[]> {
+    const query: Record<string, unknown> = {
+      usuarioId: new Types.ObjectId(usuarioId),
+    };
+
+    if (filtros.especialidad) {
+      query.especialidad = {
+        $regex: escaparRegex(filtros.especialidad),
+        $options: 'i',
+      };
+    }
+
+    if (filtros.tipo) {
+      query.tipo = {
+        $regex: escaparRegex(filtros.tipo),
+        $options: 'i',
+      };
+    }
+
+    if (filtros.medico) {
+      query.medico = {
+        $regex: escaparRegex(filtros.medico),
+        $options: 'i',
+      };
+    }
+
+    // La fecha exacta tiene prioridad sobre el rango
+    if (filtros.fecha) {
+      query.fecha = {
+        $gte: inicioDelDia(filtros.fecha),
+        $lte: finDelDia(filtros.fecha),
+      };
+    } else if (filtros.desde || filtros.hasta) {
+      const rango: Record<string, Date> = {};
+
+      if (filtros.desde) {
+        rango.$gte = inicioDelDia(filtros.desde);
+      }
+
+      if (filtros.hasta) {
+        rango.$lte = finDelDia(filtros.hasta);
+      }
+
+      query.fecha = rango;
+    }
+
+    return this.estudioModel.find(query).sort({ fecha: -1 }).exec();
   }
 
   // AP-83: Obtener controles de los próximos 30 días
-  async findControlesProximos(
-    usuarioId: string,
-  ): Promise<EstudioDocument[]> {
+  async findControlesProximos(usuarioId: string): Promise<EstudioDocument[]> {
     const hoy = inicioDelDia(new Date());
     const limite = new Date(hoy);
     limite.setUTCDate(limite.getUTCDate() + 30);
@@ -82,10 +131,7 @@ export class EstudiosService {
   }
 
   // Obtener un estudio por ID
-  async findOne(
-    usuarioId: string,
-    id: string,
-  ): Promise<EstudioDocument> {
+  async findOne(usuarioId: string, id: string): Promise<EstudioDocument> {
     this.validarId(id);
 
     const estudio = await this.estudioModel
