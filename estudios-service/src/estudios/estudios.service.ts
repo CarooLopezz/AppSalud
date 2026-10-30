@@ -1,4 +1,3 @@
-
 import {
   BadRequestException,
   Injectable,
@@ -9,6 +8,20 @@ import { Model, Types } from 'mongoose';
 import { Estudio, EstudioDocument } from './estudio.schema.js';
 import { CreateEstudioDto } from './dto/create-estudio.dto.js';
 import { UpdateEstudioDto } from './dto/update-estudio.dto.js';
+
+// Inicio del día en UTC
+function inicioDelDia(fecha: string | Date): Date {
+  const d = new Date(fecha);
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+}
+
+// Final del día en UTC
+function finDelDia(fecha: string | Date): Date {
+  const d = new Date(fecha);
+  d.setUTCHours(23, 59, 59, 999);
+  return d;
+}
 
 @Injectable()
 export class EstudiosService {
@@ -23,6 +36,7 @@ export class EstudiosService {
     }
   }
 
+  // Crear un estudio
   async create(
     usuarioId: string,
     dto: CreateEstudioDto,
@@ -39,6 +53,7 @@ export class EstudiosService {
     return estudio.save();
   }
 
+  // Obtener todos los estudios del usuario
   async findAll(usuarioId: string): Promise<EstudioDocument[]> {
     return this.estudioModel
       .find({ usuarioId: new Types.ObjectId(usuarioId) })
@@ -46,6 +61,27 @@ export class EstudiosService {
       .exec();
   }
 
+  // AP-83: Obtener controles de los próximos 30 días
+  async findControlesProximos(
+    usuarioId: string,
+  ): Promise<EstudioDocument[]> {
+    const hoy = inicioDelDia(new Date());
+    const limite = new Date(hoy);
+    limite.setUTCDate(limite.getUTCDate() + 30);
+
+    return this.estudioModel
+      .find({
+        usuarioId: new Types.ObjectId(usuarioId),
+        proximoControl: {
+          $gte: hoy,
+          $lte: finDelDia(limite),
+        },
+      })
+      .sort({ proximoControl: 1 })
+      .exec();
+  }
+
+  // Obtener un estudio por ID
   async findOne(
     usuarioId: string,
     id: string,
@@ -66,6 +102,7 @@ export class EstudiosService {
     return estudio;
   }
 
+  // Actualizar un estudio
   async update(
     usuarioId: string,
     id: string,
@@ -102,6 +139,7 @@ export class EstudiosService {
     return estudio;
   }
 
+  // Eliminar un estudio
   async remove(usuarioId: string, id: string): Promise<void> {
     this.validarId(id);
 
