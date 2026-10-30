@@ -1,4 +1,3 @@
-
 import {
   Body,
   Controller,
@@ -40,6 +39,11 @@ export class EstudiosController {
   @Get()
   findAll(@Req() req: AuthenticatedRequest) {
     return this.estudiosService.findAll(req.user.userId);
+  }
+
+  @Get('proximos-controles')
+  findControlesProximos(@Req() req: AuthenticatedRequest) {
+    return this.estudiosService.findControlesProximos(req.user.userId);
   }
 
   @Get(':id')
