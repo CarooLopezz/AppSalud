@@ -8,12 +8,24 @@ import { AppService } from './app.service.js';
 import { TodosLosErroresFilter } from './common/todos-los-errores.filter.js';
 import { EstudiosModule } from './estudios/estudios.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { join } from 'node:path';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile:
+        process.env.NODE_ENV === 'production'
+          ? true
+          : join(process.cwd(), 'src/schema.gql'),
+      context: ({ req }: { req: unknown }) => ({ req }),
+    }),
 
     MongooseModule.forRootAsync({
       inject: [ConfigService],
