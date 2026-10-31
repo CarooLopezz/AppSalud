@@ -3,3 +3,6 @@ dist/
 .env
 coverage/
 *.log
+*.tsbuildinfo
+# Certificados locales (mkcert o autofirmado): nunca se suben
+certs/
