@@ -121,6 +121,7 @@ Qué cubren los de usuarios y médicos (AP-98):
 ## Usuarios y médicos
 - Registro: `POST /auth/register` con `nombre`, `email` y `password` (mínimo 6 caracteres). Los registros públicos tienen el rol `paciente`.
 - Inicio de sesión: `POST /auth/login`; devuelve `access_token`.
+- La documentación interactiva de Swagger está en `https://localhost/api/users/docs` con Docker, o en `http://localhost:3001/docs` al ejecutar `users-service` directamente. En Swagger, usá **Authorize** y pegá el `access_token` obtenido en el login para probar las rutas protegidas. Si ejecutás el servicio directamente, elegí el servidor local en el selector de Swagger.
 - Directorio: `GET /users/medicos` requiere `Authorization: Bearer <access_token>` y devuelve nombre y correo de las cuentas con rol `medico`.
 - Para ejecutar las pruebas del frontend: `cd frontend && npm test`. Para las del servicio de usuarios: `cd users-service && npm test`.
 
