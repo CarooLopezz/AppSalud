@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance } from 'axios'
+import { SESION_VENCIDA } from '../auth/context.ts'
 
 // Las URLs se pueden cambiar con un .env (ver .env.example).
 // Vite las lee al compilar, así que hay que reiniciar `npm run dev` si cambian.
@@ -16,6 +17,16 @@ function crearCliente(baseURL: string): AxiosInstance {
     const token = localStorage.getItem(TOKEN_KEY)
     if (token) config.headers.Authorization = `Bearer ${token}`
     return config
+  })
+
+  // Un 401 con token significa que la sesión venció: se borra y se avisa a la app.
+  // Sin token (por ejemplo, contraseña incorrecta en el login) el error sigue de largo.
+  cliente.interceptors.response.use(undefined, (error) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401 && error.config?.headers?.Authorization) {
+      localStorage.removeItem(TOKEN_KEY)
+      window.dispatchEvent(new Event(SESION_VENCIDA))
+    }
+    return Promise.reject(error)
   })
 
   return cliente

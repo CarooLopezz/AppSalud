@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../auth/useAuth.ts'
 
 const accesos = [
   {
@@ -29,6 +30,8 @@ const accesos = [
 ]
 
 export default function Inicio() {
+  const { token } = useAuth()
+
   return (
     <>
       <section className="bienvenida">
@@ -37,14 +40,16 @@ export default function Inicio() {
           Cargá tus estudios, guardá tus recetas y anotá los datos de tus
           médicos para tenerlos siempre a mano.
         </p>
-        <div className="acciones">
-          <Link to="/registro" className="boton boton-primario">
-            Crear cuenta
-          </Link>
-          <Link to="/login" className="boton">
-            Iniciar sesión
-          </Link>
-        </div>
+        {!token && (
+          <div className="acciones">
+            <Link to="/registro" className="boton boton-primario">
+              Crear cuenta
+            </Link>
+            <Link to="/login" className="boton">
+              Iniciar sesión
+            </Link>
+          </div>
+        )}
       </section>
 
       <section aria-labelledby="accesos-titulo">

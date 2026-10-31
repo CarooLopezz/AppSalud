@@ -15,7 +15,7 @@ export default function IniciarSesion() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
-  const { iniciarSesion } = useAuth()
+  const { iniciarSesion, sesionVencida } = useAuth()
   const navigate = useNavigate()
   const registrado = loginState?.registered
   const destino = loginState?.from ?? '/perfil'
@@ -40,6 +40,7 @@ export default function IniciarSesion() {
       <h1>Iniciar sesión</h1>
       <p className="texto-suave">Accedé a tu espacio personal de salud.</p>
       {registrado && <p className="mensaje-exito" role="status">Cuenta creada. Ya podés iniciar sesión.</p>}
+      {sesionVencida && <p className="mensaje-aviso" role="status">Tu sesión venció. Volvé a ingresar para continuar.</p>}
       <form className="formulario" onSubmit={handleSubmit}>
         <label htmlFor="login-email">Correo electrónico</label>
         <input
