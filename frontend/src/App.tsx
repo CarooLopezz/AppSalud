@@ -17,6 +17,7 @@ import Agenda from "./pages/Agenda.tsx";
 import { AuthProvider } from "./auth/AuthContext.tsx";
 import { useAuth } from "./auth/useAuth.ts";
 import Estudios from "./pages/Estudios.tsx";
+import Perfil from "./pages/Perfil.tsx";
 
 function RutaProtegida({ children }: { children: ReactNode }) {
   const { token } = useAuth();
@@ -72,7 +73,7 @@ function Rutas() {
           path="perfil"
           element={
             <RutaProtegida>
-              <EnConstruccion titulo="Mi perfil" />
+              <Perfil />
             </RutaProtegida>
           }
         />
