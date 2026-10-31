@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth.ts'
+import BotonTema from './BotonTema.tsx'
 
 const secciones = [
   { to: '/', label: 'Inicio', end: true },
@@ -32,6 +33,7 @@ export default function Layout() {
           </ul>
         </nav>
         <div className="sesion">
+          <BotonTema />
           {token ? (
             <button className="enlace-boton" type="button" onClick={cerrarSesion}>Cerrar sesión</button>
           ) : (
