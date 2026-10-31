@@ -1,6 +1,13 @@
-
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
+import { recetasApi, usersApi } from '../api/clients.ts'
+import { errorMessage } from '../api/errorMessage.ts'
+
+type Medicamento = {
+  id: string
+  nombre: string
+  presentacion?: string
+}
 
 type Receta = {
   id: string
@@ -11,12 +18,41 @@ type Receta = {
   duracion: string
   indicaciones?: string
   fecha: string
+  medicamento?: Medicamento
 }
 
-const GRAPHQL_URL = 'http://localhost:3003/graphql'
+const CAMPOS_RECETA = `
+  id
+  pacienteId
+  medicamentoId
+  dosis
+  frecuencia
+  duracion
+  indicaciones
+  fecha
+  medicamento { id nombre presentacion }
+`
+
+// recetas-service es GraphQL: todo va por POST /graphql, con el token de la sesión
+async function graphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
+  const { data } = await recetasApi.post<{ data?: T; errors?: { message: string }[] }>('/graphql', {
+    query,
+    variables,
+  })
+  if (data.errors?.length || !data.data) throw new Error(data.errors?.[0]?.message ?? 'Error de GraphQL')
+  return data.data
+}
+
+// '2026-06-25' → '25/06/2026'
+function formatearFecha(fecha: string) {
+  const [anio, mes, dia] = fecha.slice(0, 10).split('-')
+  return dia && mes && anio ? `${dia}/${mes}/${anio}` : fecha
+}
 
 function RecetasPage() {
+  const [pacienteId, setPacienteId] = useState('')
   const [recetas, setRecetas] = useState<Receta[]>([])
+  const [medicamentos, setMedicamentos] = useState<Medicamento[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
@@ -25,7 +61,6 @@ function RecetasPage() {
   const [recetaSeleccionada, setRecetaSeleccionada] =
     useState<Receta | null>(null)
 
-  const [pacienteId, setPacienteId] = useState('')
   const [medicamentoId, setMedicamentoId] = useState('')
   const [dosis, setDosis] = useState('')
   const [frecuencia, setFrecuencia] = useState('')
@@ -34,57 +69,36 @@ function RecetasPage() {
   const [fecha, setFecha] = useState('')
 
   useEffect(() => {
-    cargarRecetas()
+    let activo = true
+
+    async function cargar() {
+      try {
+        const [{ data: cuenta }, datos] = await Promise.all([
+          usersApi.get<{ _id: string }>('/users/me'),
+          graphql<{ recetas: Receta[]; medicamentos: Medicamento[] }>(`
+            {
+              recetas { ${CAMPOS_RECETA} }
+              medicamentos { id nombre presentacion }
+            }
+          `),
+        ])
+        if (!activo) return
+        setPacienteId(cuenta._id)
+        // El servicio devuelve todas las recetas: acá se muestran solo las del usuario
+        setRecetas(datos.recetas.filter((receta) => receta.pacienteId === cuenta._id))
+        setMedicamentos(datos.medicamentos)
+      } catch (requestError) {
+        if (activo) setError(errorMessage(requestError, 'No se pudieron cargar las recetas.'))
+      } finally {
+        if (activo) setCargando(false)
+      }
+    }
+
+    cargar()
+    return () => { activo = false }
   }, [])
 
-  async function cargarRecetas() {
-    try {
-      setCargando(true)
-      setError('')
-
-      const respuesta = await fetch(GRAPHQL_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: `
-            {
-              recetas {
-                id
-                pacienteId
-                medicamentoId
-                dosis
-                frecuencia
-                duracion
-                indicaciones
-                fecha
-              }
-            }
-          `,
-        }),
-      })
-
-      const resultado = await respuesta.json()
-
-      if (resultado.errors) {
-        throw new Error('No se pudieron cargar las recetas')
-      }
-
-      setRecetas(resultado.data.recetas)
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : 'Ocurrió un error al cargar las recetas',
-      )
-    } finally {
-      setCargando(false)
-    }
-  }
-
   function limpiarFormulario() {
-    setPacienteId('')
     setMedicamentoId('')
     setDosis('')
     setFrecuencia('')
@@ -101,13 +115,12 @@ function RecetasPage() {
   }
 
   function editarReceta(receta: Receta) {
-    setPacienteId(receta.pacienteId)
     setMedicamentoId(receta.medicamentoId)
     setDosis(receta.dosis)
     setFrecuencia(receta.frecuencia)
     setDuracion(receta.duracion)
     setIndicaciones(receta.indicaciones ?? '')
-    setFecha(receta.fecha)
+    setFecha(receta.fecha.slice(0, 10))
     setEditandoId(receta.id)
     setMostrarFormulario(true)
     setRecetaSeleccionada(null)
@@ -124,36 +137,6 @@ function RecetasPage() {
     try {
       setError('')
 
-      const query = editandoId
-        ? `
-          mutation ActualizarReceta($input: UpdateRecetaInput!) {
-            actualizarReceta(input: $input) {
-              id
-              pacienteId
-              medicamentoId
-              dosis
-              frecuencia
-              duracion
-              indicaciones
-              fecha
-            }
-          }
-        `
-        : `
-          mutation CrearReceta($input: CreateRecetaInput!) {
-            crearReceta(input: $input) {
-              id
-              pacienteId
-              medicamentoId
-              dosis
-              frecuencia
-              duracion
-              indicaciones
-              fecha
-            }
-          }
-        `
-
       const input = {
         ...(editandoId ? { id: editandoId } : {}),
         pacienteId,
@@ -165,91 +148,54 @@ function RecetasPage() {
         fecha,
       }
 
-      const respuesta = await fetch(GRAPHQL_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query,
-          variables: {
-            input,
-          },
-        }),
-      })
-
-      const resultado = await respuesta.json()
-
-      if (resultado.errors) {
-        throw new Error(
-          editandoId
-            ? 'No se pudo actualizar la receta'
-            : 'No se pudo crear la receta',
-        )
-      }
-
-      const recetaGuardada = editandoId
-        ? resultado.data.actualizarReceta
-        : resultado.data.crearReceta
-
+      let recetaGuardada: Receta
       if (editandoId) {
+        const datos = await graphql<{ actualizarReceta: Receta }>(
+          `mutation ActualizarReceta($input: UpdateRecetaInput!) {
+            actualizarReceta(input: $input) { ${CAMPOS_RECETA} }
+          }`,
+          { input },
+        )
+        recetaGuardada = datos.actualizarReceta
         setRecetas((recetasActuales) =>
           recetasActuales.map((receta) =>
             receta.id === editandoId ? recetaGuardada : receta,
           ),
         )
       } else {
-        setRecetas((recetasActuales) => [
-          ...recetasActuales,
-          recetaGuardada,
-        ])
+        const datos = await graphql<{ crearReceta: Receta }>(
+          `mutation CrearReceta($input: CreateRecetaInput!) {
+            crearReceta(input: $input) { ${CAMPOS_RECETA} }
+          }`,
+          { input },
+        )
+        recetaGuardada = datos.crearReceta
+        setRecetas((recetasActuales) => [...recetasActuales, recetaGuardada])
       }
 
       limpiarFormulario()
       setMostrarFormulario(false)
-    } catch (error) {
+    } catch (requestError) {
       setError(
-        error instanceof Error
-          ? error.message
-          : 'Ocurrió un error al guardar la receta',
+        errorMessage(
+          requestError,
+          editandoId ? 'No se pudo actualizar la receta.' : 'No se pudo crear la receta.',
+        ),
       )
     }
   }
 
   async function eliminarReceta(id: string) {
-    const confirmar = window.confirm(
-      '¿Estás segura de que querés eliminar esta receta?',
-    )
-
-    if (!confirmar) {
-      return
-    }
+    if (!window.confirm('¿Querés eliminar esta receta?')) return
 
     try {
       setError('')
-
-      const respuesta = await fetch(GRAPHQL_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: `
-            mutation EliminarReceta($id: ID!) {
-              eliminarReceta(id: $id)
-            }
-          `,
-          variables: {
-            id,
-          },
-        }),
-      })
-
-      const resultado = await respuesta.json()
-
-      if (resultado.errors) {
-        throw new Error('No se pudo eliminar la receta')
-      }
+      await graphql<{ eliminarReceta: boolean }>(
+        `mutation EliminarReceta($id: ID!) {
+          eliminarReceta(id: $id)
+        }`,
+        { id },
+      )
 
       setRecetas((recetasActuales) =>
         recetasActuales.filter((receta) => receta.id !== id),
@@ -258,12 +204,8 @@ function RecetasPage() {
       if (recetaSeleccionada?.id === id) {
         setRecetaSeleccionada(null)
       }
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : 'Ocurrió un error al eliminar la receta',
-      )
+    } catch (requestError) {
+      setError(errorMessage(requestError, 'No se pudo eliminar la receta.'))
     }
   }
 
@@ -272,36 +214,49 @@ function RecetasPage() {
     setMostrarFormulario(false)
   }
 
+  function nombreMedicamento(receta: Receta) {
+    const medicamento = receta.medicamento
+      ?? medicamentos.find((m) => m.id === receta.medicamentoId)
+    if (!medicamento) return 'Medicamento no encontrado'
+    return medicamento.presentacion
+      ? `${medicamento.nombre} (${medicamento.presentacion})`
+      : medicamento.nombre
+  }
+
   return (
-    <main className="recetas-page">
-      <header className="recetas-header">
+    <section className="recetas-page">
+      <div className="encabezado-pagina">
         <div>
-          <h1>Recetas</h1>
-          <p>Listado de recetas médicas</p>
+          <p className="sobrelinea">TRATAMIENTOS</p>
+          <h1>Mis recetas</h1>
+          <p className="texto-suave">Tus recetas médicas con su medicamento, dosis y duración.</p>
         </div>
 
-        <button
-          type="button"
-          className="nueva-receta"
-          onClick={abrirNuevaReceta}
-        >
-          + Nueva receta
-        </button>
-      </header>
+        {!cargando && pacienteId && (
+          <button
+            type="button"
+            className="boton boton-primario"
+            onClick={abrirNuevaReceta}
+          >
+            + Nueva receta
+          </button>
+        )}
+      </div>
 
       {mostrarFormulario && (
-        <section className="formulario-receta">
-          <div className="formulario-header">
+        <section className="formulario-receta" aria-labelledby="formulario-receta-titulo">
+          <div className="receta-card-header">
             <div>
-              <h2>
+              <h2 id="formulario-receta-titulo">
                 {editandoId ? 'Editar receta' : 'Nueva receta'}
               </h2>
-              <p>Completá los datos de la receta médica.</p>
+              <p className="texto-suave">Completá los datos de la receta médica.</p>
             </div>
 
             <button
               type="button"
-              className="cerrar-formulario"
+              className="cerrar"
+              aria-label="Cerrar formulario"
               onClick={cancelarFormulario}
             >
               ×
@@ -311,23 +266,21 @@ function RecetasPage() {
           <form onSubmit={guardarReceta}>
             <div className="formulario-grid">
               <label>
-                Paciente
-                <input
-                  value={pacienteId}
-                  onChange={(event) => setPacienteId(event.target.value)}
-                  placeholder="Ej. 12345678"
-                  required
-                />
-              </label>
-
-              <label>
                 Medicamento
-                <input
+                <select
                   value={medicamentoId}
                   onChange={(event) => setMedicamentoId(event.target.value)}
-                  placeholder="ID del medicamento"
                   required
-                />
+                >
+                  <option value="">Elegí un medicamento</option>
+                  {medicamentos.map((medicamento) => (
+                    <option key={medicamento.id} value={medicamento.id}>
+                      {medicamento.presentacion
+                        ? `${medicamento.nombre} (${medicamento.presentacion})`
+                        : medicamento.nombre}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label>
@@ -381,16 +334,16 @@ function RecetasPage() {
               </label>
             </div>
 
-            <div className="formulario-acciones">
+            <div className="receta-acciones">
               <button
                 type="button"
-                className="cancelar"
+                className="boton"
                 onClick={cancelarFormulario}
               >
                 Cancelar
               </button>
 
-              <button type="submit" className="guardar">
+              <button type="submit" className="boton boton-primario">
                 {editandoId ? 'Guardar cambios' : 'Guardar receta'}
               </button>
             </div>
@@ -399,49 +352,44 @@ function RecetasPage() {
       )}
 
       {recetaSeleccionada && (
-        <section className="receta-card">
+        <section className="receta-card receta-detalle" aria-labelledby="detalle-receta-titulo">
           <div className="receta-card-header">
             <div>
-              <h2>Detalle de receta</h2>
-              <span>
-                Paciente: {recetaSeleccionada.pacienteId}
-              </span>
+              <h2 id="detalle-receta-titulo">{nombreMedicamento(recetaSeleccionada)}</h2>
+              <span className="texto-suave">Detalle de la receta</span>
             </div>
 
             <button
               type="button"
+              className="cerrar"
+              aria-label="Cerrar detalle"
               onClick={() => setRecetaSeleccionada(null)}
             >
               ×
             </button>
           </div>
 
-          <div className="receta-datos">
+          <dl className="receta-datos">
             <div>
-              <strong>Fecha</strong>
-              <span>{recetaSeleccionada.fecha}</span>
+              <dt>Fecha</dt>
+              <dd>{formatearFecha(recetaSeleccionada.fecha)}</dd>
             </div>
 
             <div>
-              <strong>Dosis</strong>
-              <span>{recetaSeleccionada.dosis}</span>
+              <dt>Dosis</dt>
+              <dd>{recetaSeleccionada.dosis}</dd>
             </div>
 
             <div>
-              <strong>Frecuencia</strong>
-              <span>{recetaSeleccionada.frecuencia}</span>
+              <dt>Frecuencia</dt>
+              <dd>{recetaSeleccionada.frecuencia}</dd>
             </div>
 
             <div>
-              <strong>Duración</strong>
-              <span>{recetaSeleccionada.duracion}</span>
+              <dt>Duración</dt>
+              <dd>{recetaSeleccionada.duracion}</dd>
             </div>
-
-            <div>
-              <strong>Medicamento</strong>
-              <span>{recetaSeleccionada.medicamentoId}</span>
-            </div>
-          </div>
+          </dl>
 
           {recetaSeleccionada.indicaciones && (
             <div className="indicaciones">
@@ -452,64 +400,50 @@ function RecetasPage() {
         </section>
       )}
 
-      {cargando && <p>Cargando recetas...</p>}
+      {cargando && <p role="status">Cargando recetas…</p>}
 
-      {error && <div className="error">{error}</div>}
+      {error && <p className="mensaje-error" role="alert">{error}</p>}
 
       {!cargando && !error && recetas.length === 0 && (
-        <div className="sin-recetas">
-          <h2>No hay recetas</h2>
-          <p>Todavía no hay recetas registradas.</p>
+        <div className="estado-vacio">
+          <h2>Todavía no tenés recetas</h2>
+          <p>Cuando cargues una receta, va a aparecer en este listado.</p>
         </div>
       )}
 
-      {!cargando && !error && recetas.length > 0 && (
-        <section className="recetas-lista">
+      {!cargando && recetas.length > 0 && (
+        <ul className="recetas-lista">
           {recetas.map((receta) => (
-            <article className="receta-card" key={receta.id}>
+            <li className="receta-card" key={receta.id}>
               <div className="receta-card-header">
-                <div>
-                  <h2>Receta médica</h2>
-                  <span>Paciente: {receta.pacienteId}</span>
-                </div>
+                <h2>{nombreMedicamento(receta)}</h2>
 
                 <span className="receta-fecha">
-                  {receta.fecha}
+                  {formatearFecha(receta.fecha)}
                 </span>
               </div>
 
-              <div className="receta-datos">
+              <dl className="receta-datos">
                 <div>
-                  <strong>Dosis</strong>
-                  <span>{receta.dosis}</span>
+                  <dt>Dosis</dt>
+                  <dd>{receta.dosis}</dd>
                 </div>
 
                 <div>
-                  <strong>Frecuencia</strong>
-                  <span>{receta.frecuencia}</span>
+                  <dt>Frecuencia</dt>
+                  <dd>{receta.frecuencia}</dd>
                 </div>
 
                 <div>
-                  <strong>Duración</strong>
-                  <span>{receta.duracion}</span>
+                  <dt>Duración</dt>
+                  <dd>{receta.duracion}</dd>
                 </div>
-
-                <div>
-                  <strong>Medicamento</strong>
-                  <span>{receta.medicamentoId}</span>
-                </div>
-              </div>
-
-              {receta.indicaciones && (
-                <div className="indicaciones">
-                  <strong>Indicaciones</strong>
-                  <p>{receta.indicaciones}</p>
-                </div>
-              )}
+              </dl>
 
               <div className="receta-acciones">
                 <button
                   type="button"
+                  className="boton"
                   onClick={() => verReceta(receta)}
                 >
                   Ver
@@ -517,6 +451,7 @@ function RecetasPage() {
 
                 <button
                   type="button"
+                  className="boton"
                   onClick={() => editarReceta(receta)}
                 >
                   Editar
@@ -524,17 +459,17 @@ function RecetasPage() {
 
                 <button
                   type="button"
-                  className="eliminar"
+                  className="boton boton-peligro"
                   onClick={() => eliminarReceta(receta.id)}
                 >
                   Eliminar
                 </button>
               </div>
-            </article>
+            </li>
           ))}
-        </section>
+        </ul>
       )}
-    </main>
+    </section>
   )
 }
 
