@@ -333,7 +333,8 @@ a {
 }
 
 .mensaje-error,
-.mensaje-exito {
+.mensaje-exito,
+.mensaje-aviso {
   margin: 0.5rem 0;
   padding: 0.75rem;
   border-radius: 8px;
@@ -347,6 +348,11 @@ a {
 .mensaje-exito {
   color: #176346;
   background: #e7f6ef;
+}
+
+.mensaje-aviso {
+  color: var(--texto);
+  background: var(--primario-suave);
 }
 
 /* ---- Directorio de médicos ---- */

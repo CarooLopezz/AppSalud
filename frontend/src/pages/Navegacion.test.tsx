@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../App.tsx'
 import { TOKEN_KEY } from '../api/clients.ts'
+import { SESION_VENCIDA } from '../auth/context.ts'
 
 // Las pantallas internas llaman a la API: la simulamos para que no se cuelguen
 vi.mock('../api/clients.ts', () => ({
@@ -26,6 +27,15 @@ describe('inicio y navegación', () => {
     for (const titulo of ['Agenda de médicos', 'Médicos', 'Estudios', 'Recetas', 'Mi perfil']) {
       expect(screen.getByRole('heading', { name: titulo })).toBeInTheDocument()
     }
+  })
+
+  it('el inicio no ofrece crear cuenta ni iniciar sesión si ya hay sesión', () => {
+    localStorage.setItem(TOKEN_KEY, 'token-prueba')
+    abrir('/')
+
+    const bienvenida = screen.getByRole('heading', { name: 'Tu salud, en un solo lugar' }).parentElement!
+    expect(bienvenida).not.toHaveTextContent('Crear cuenta')
+    expect(bienvenida).not.toHaveTextContent('Iniciar sesión')
   })
 
   it('la barra siempre tiene el enlace a Inicio y a las secciones', () => {
@@ -57,6 +67,19 @@ describe('inicio y navegación', () => {
 
     expect(screen.getByRole('heading', { name: 'Mis estudios' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Iniciar sesión' })).not.toBeInTheDocument()
+  })
+
+  it('si la sesión vence, lleva al login y avisa por qué', () => {
+    localStorage.setItem(TOKEN_KEY, 'token-vencido')
+    abrir('/medicos')
+
+    act(() => {
+      window.dispatchEvent(new Event(SESION_VENCIDA))
+    })
+
+    expect(screen.getByRole('heading', { name: 'Iniciar sesión' })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Tu sesión venció')
+    expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).not.toBeInTheDocument()
   })
 
   it('desde una tarjeta del inicio se navega a esa sección', () => {
