@@ -813,3 +813,154 @@ a {
     padding: 16px;
   }
 }
+
+/* ---- Recetas ---- */
+.formulario-receta,
+.receta-card {
+  padding: 1.5rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.formulario-receta,
+.receta-detalle {
+  margin-bottom: 1.5rem;
+}
+
+.receta-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.receta-card-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.receta-card-header p {
+  margin: 0.25rem 0 0;
+}
+
+.receta-fecha {
+  flex-shrink: 0;
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  background: var(--primario-suave);
+  color: var(--primario);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.cerrar {
+  padding: 0.1rem 0.6rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--texto-suave);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cerrar:hover {
+  background: var(--primario-suave);
+  color: var(--texto);
+}
+
+.formulario-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.formulario-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.formulario-grid input,
+.formulario-grid select,
+.formulario-grid textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-weight: 400;
+}
+
+.formulario-grid textarea {
+  resize: vertical;
+}
+
+.campo-completo {
+  grid-column: 1 / -1;
+}
+
+.recetas-lista {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.receta-datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.receta-datos div {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: var(--fondo);
+}
+
+.receta-datos dt,
+.indicaciones strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.receta-datos dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.indicaciones {
+  margin-top: 1rem;
+}
+
+.indicaciones p {
+  margin: 0;
+}
+
+.receta-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 650px) {
+  .formulario-grid {
+    grid-template-columns: 1fr;
+  }
+}
