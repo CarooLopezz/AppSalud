@@ -77,7 +77,7 @@ describe('iniciar sesión', () => {
 
     completarLogin('ana@appsalud.com', 'Secreta123')
 
-    expect(await screen.findByRole('heading', { name: 'Recetas' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Mis recetas' })).toBeInTheDocument()
   })
 
   it('cerrar sesión borra el token y vuelve a mostrar "Iniciar sesión"', async () => {
