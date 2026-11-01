@@ -8,7 +8,6 @@ import {
 import type { ReactNode } from "react";
 import Layout from "./components/Layout.tsx";
 import Inicio from "./pages/Inicio.tsx";
-import EnConstruccion from "./pages/EnConstruccion.tsx";
 import NoEncontrada from "./pages/NoEncontrada.tsx";
 import IniciarSesion from "./pages/IniciarSesion.tsx";
 import Registro from "./pages/Registro.tsx";
@@ -17,6 +16,7 @@ import Agenda from "./pages/Agenda.tsx";
 import { AuthProvider } from "./auth/AuthContext.tsx";
 import { useAuth } from "./auth/useAuth.ts";
 import Estudios from "./pages/Estudios.tsx";
+import Perfil from "./pages/Perfil.tsx";
 import RecetasPage from "./recetas/RecetasPage.tsx";
 
 function RutaProtegida({ children }: { children: ReactNode }) {
@@ -73,7 +73,7 @@ function Rutas() {
           path="perfil"
           element={
             <RutaProtegida>
-              <EnConstruccion titulo="Mi perfil" />
+              <Perfil />
             </RutaProtegida>
           }
         />

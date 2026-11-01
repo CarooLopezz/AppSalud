@@ -25,7 +25,7 @@ const accesos = [
   {
     to: '/perfil',
     titulo: 'Mi perfil',
-    texto: 'Tus datos personales y tus médicos de cabecera.',
+    texto: 'Consultá los datos de tu cuenta.',
   },
 ]
 
