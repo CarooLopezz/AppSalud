@@ -55,8 +55,7 @@ describe('inicio y navegación', () => {
     localStorage.setItem(TOKEN_KEY, 'token-prueba')
     abrir('/estudios')
 
-    // La pantalla de Estudios todavía es provisoria ("en construcción")
-    expect(screen.getByRole('heading', { name: 'Estudios' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Mis estudios' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Iniciar sesión' })).not.toBeInTheDocument()
   })
 

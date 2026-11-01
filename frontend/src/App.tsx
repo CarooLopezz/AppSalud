@@ -8,7 +8,6 @@ import {
 import type { ReactNode } from "react";
 import Layout from "./components/Layout.tsx";
 import Inicio from "./pages/Inicio.tsx";
-import EnConstruccion from "./pages/EnConstruccion.tsx";
 import NoEncontrada from "./pages/NoEncontrada.tsx";
 import IniciarSesion from "./pages/IniciarSesion.tsx";
 import Registro from "./pages/Registro.tsx";
@@ -18,6 +17,7 @@ import { AuthProvider } from "./auth/AuthContext.tsx";
 import { useAuth } from "./auth/useAuth.ts";
 import Estudios from "./pages/Estudios.tsx";
 import Perfil from "./pages/Perfil.tsx";
+import RecetasPage from "./recetas/RecetasPage.tsx";
 
 function RutaProtegida({ children }: { children: ReactNode }) {
   const { token } = useAuth();
@@ -65,7 +65,7 @@ function Rutas() {
           path="recetas"
           element={
             <RutaProtegida>
-              <EnConstruccion titulo="Recetas" />
+              <RecetasPage />
             </RutaProtegida>
           }
         />
