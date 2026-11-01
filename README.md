@@ -100,6 +100,7 @@ Los primeros intentos dan `401` (contraseña incorrecta) y a partir del sexto da
 ### Usuarios y médicos (users-service)
 - Registro: `POST /auth/register` con `nombre`, `email` y `password` (mínimo 6 caracteres). Los registros públicos tienen el rol `paciente`.
 - Inicio de sesión: `POST /auth/login`; devuelve `access_token` (JWT).
+- La documentación interactiva de Swagger está en `https://localhost/api/users/docs` con Docker, o en `http://localhost:3001/docs` al ejecutar `users-service` directamente. En Swagger, usá **Authorize** y pegá el `access_token` obtenido en el login para probar las rutas protegidas. Si ejecutás el servicio directamente, elegí el servidor local en el selector de Swagger.
 - Directorio: `GET /users/medicos` requiere `Authorization: Bearer <access_token>` y devuelve nombre y correo de las cuentas con rol `medico`.
 
 ### Agenda (users-service)
