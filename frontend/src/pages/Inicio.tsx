@@ -4,8 +4,8 @@ import { useAuth } from '../auth/useAuth.ts'
 const accesos = [
   {
     to: '/agenda',
-    titulo: 'Agenda de médicos',
-    texto: 'Solicitá, consultá y gestioná tus turnos médicos.',
+    titulo: 'Mis turnos',
+    texto: 'Anotá tus turnos médicos y tené a la vista los próximos controles.',
   },
   {
     to: '/medicos',

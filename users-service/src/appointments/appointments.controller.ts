@@ -15,7 +15,6 @@ import { AppointmentsService } from './appointments.service.js';
 import type { UsuarioAutenticado } from './appointments.service.js';
 import { CreateAppointmentDto } from './dto/create-appointment.dto.js';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto.js';
-import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
 
 interface AuthenticatedRequest extends Request {
   user: UsuarioAutenticado;
@@ -50,17 +49,8 @@ export class AppointmentsController {
     return this.appointmentsService.update(request.user, id, dto);
   }
 
-  @Patch(':id/estado')
-  updateStatus(
-    @Req() request: AuthenticatedRequest,
-    @Param('id') id: string,
-    @Body() dto: UpdateAppointmentStatusDto,
-  ) {
-    return this.appointmentsService.updateStatus(request.user, id, dto.estado);
-  }
-
   @Delete(':id')
-  cancel(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
-    return this.appointmentsService.cancel(request.user, id);
+  remove(@Req() request: AuthenticatedRequest, @Param('id') id: string) {
+    return this.appointmentsService.remove(request.user, id);
   }
 }

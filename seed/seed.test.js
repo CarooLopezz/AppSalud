@@ -10,6 +10,7 @@ import {
   medicamentos,
   recetasPorPaciente,
   seed,
+  turnosPorPaciente,
   usuarios,
 } from './seed.js'
 
@@ -24,9 +25,10 @@ const opciones = {
 
 const totalEstudios = Object.values(estudiosPorPaciente).flat().length
 const totalRecetas = Object.values(recetasPorPaciente).flat().length
+const totalTurnos = Object.values(turnosPorPaciente).flat().length
 
 let client
-let users, meds, estudios, recetas
+let users, meds, estudios, recetas, turnos
 
 before(async () => {
   client = await new MongoClient(mongoUrl, {
@@ -36,6 +38,7 @@ before(async () => {
   meds = client.db(opciones.recetasDb).collection('medicamentos')
   estudios = client.db(opciones.estudiosDb).collection('estudios')
   recetas = client.db(opciones.recetasDb).collection('recetas')
+  turnos = client.db(opciones.usersDb).collection('appointments')
 })
 
 after(async () => {
@@ -46,7 +49,7 @@ after(async () => {
 })
 
 describe('seed', () => {
-  test('carga los usuarios, medicamentos, estudios y recetas de ejemplo', async () => {
+  test('carga los usuarios, medicamentos, estudios, recetas y turnos de ejemplo', async () => {
     const total = await seed(opciones)
 
     assert.deepEqual(total, {
@@ -54,11 +57,13 @@ describe('seed', () => {
       medicamentos: medicamentos.length,
       estudios: totalEstudios,
       recetas: totalRecetas,
+      turnos: totalTurnos,
     })
     assert.equal(await users.countDocuments(), usuarios.length)
     assert.equal(await meds.countDocuments(), medicamentos.length)
     assert.equal(await estudios.countDocuments(), totalEstudios)
     assert.equal(await recetas.countDocuments(), totalRecetas)
+    assert.equal(await turnos.countDocuments(), totalTurnos)
   })
 
   test('correrlo de nuevo no duplica datos', async () => {
@@ -68,6 +73,7 @@ describe('seed', () => {
     assert.equal(await meds.countDocuments(), medicamentos.length)
     assert.equal(await estudios.countDocuments(), totalEstudios)
     assert.equal(await recetas.countDocuments(), totalRecetas)
+    assert.equal(await turnos.countDocuments(), totalTurnos)
   })
 
   test('guarda las contraseñas encriptadas y sirven para el login', async () => {
@@ -104,14 +110,26 @@ describe('seed', () => {
     }
   })
 
+  test('cada turno pertenece a su paciente (usuarioId como ObjectId)', async () => {
+    for (const [email, lista] of Object.entries(turnosPorPaciente)) {
+      const user = await users.findOne({ email })
+      const suyos = await turnos.find({ usuarioId: user._id }).toArray()
+
+      assert.equal(suyos.length, lista.length, email)
+      for (const t of suyos) assert.ok(t.fecha instanceof Date)
+    }
+  })
+
   test('no borra los datos de otros usuarios', async () => {
     const otroId = new ObjectId()
     await estudios.insertOne({ tipo: 'Otro', usuarioId: otroId })
     await recetas.insertOne({ dosis: '1 mg', pacienteId: otroId.toString() })
+    await turnos.insertOne({ profesional: 'Otro', usuarioId: otroId })
 
     await seed(opciones)
 
     assert.equal(await estudios.countDocuments({ usuarioId: otroId }), 1)
     assert.equal(await recetas.countDocuments({ pacienteId: otroId.toString() }), 1)
+    assert.equal(await turnos.countDocuments({ usuarioId: otroId }), 1)
   })
 })

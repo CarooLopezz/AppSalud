@@ -3,17 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App.tsx'
 import { TOKEN_KEY } from './api/clients.ts'
 
-const { post } = vi.hoisted(() => ({ post: vi.fn() }))
+const { get, post } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }))
 
 vi.mock('./api/clients.ts', () => ({
   TOKEN_KEY: 'appsalud_token',
-  usersApi: { post },
+  usersApi: { get, post },
 }))
 
 describe('flujo de cuenta', () => {
   beforeEach(() => {
     localStorage.clear()
     post.mockReset()
+    // Después del login se abre Mi perfil, que pide los datos de la cuenta
+    get.mockReset()
+    get.mockResolvedValue({ data: { nombre: 'Ana Salud', email: 'ana@example.com', rol: 'paciente' } })
     window.history.replaceState({}, '', '/')
   })
 
