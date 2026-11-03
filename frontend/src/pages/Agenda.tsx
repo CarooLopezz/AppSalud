@@ -1,33 +1,26 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { usersApi } from '../api/clients.ts'
 import { errorMessage } from '../api/errorMessage.ts'
+import { listarProximosControles, type Estudio } from '../api/estudios.ts'
+import ProximosControles from '../components/ProximosControles.tsx'
 
-interface Cuenta {
-  _id: string
-  nombre: string
-  email: string
-  rol: 'paciente' | 'medico'
-}
-
-interface PersonaTurno {
-  _id: string
-  nombre: string
-  email: string
-}
-
+// Turno que la persona anota en su agenda personal
 interface Turno {
   _id: string
-  medicoId: PersonaTurno | string
-  pacienteId: PersonaTurno | string
+  profesional: string
+  especialidad?: string
+  lugar?: string
   fecha: string
-  motivo: string
-  estado: 'pendiente' | 'confirmado' | 'cancelado'
+  motivo?: string
+  asistido: boolean
 }
 
-const fechaLocalMinima = () => {
-  const fecha = new Date()
-  fecha.setMinutes(fecha.getMinutes() - fecha.getTimezoneOffset())
-  return fecha.toISOString().slice(0, 16)
+const formularioVacio = {
+  profesional: '',
+  especialidad: '',
+  lugar: '',
+  fecha: '',
+  motivo: '',
 }
 
 const aFechaLocal = (fecha: string) => {
@@ -36,40 +29,34 @@ const aFechaLocal = (fecha: string) => {
   return valor.toISOString().slice(0, 16)
 }
 
-const personaNombre = (persona: PersonaTurno | string) =>
-  typeof persona === 'string' ? 'Profesional' : persona.nombre
+const formatearTurno = (fecha: string) =>
+  new Intl.DateTimeFormat('es-AR', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(fecha))
 
 export default function Agenda() {
-  const [cuenta, setCuenta] = useState<Cuenta | null>(null)
-  const [medicos, setMedicos] = useState<PersonaTurno[]>([])
   const [turnos, setTurnos] = useState<Turno[]>([])
-  const [medicoId, setMedicoId] = useState('')
-  const [fecha, setFecha] = useState('')
-  const [motivo, setMotivo] = useState('')
+  const [controles, setControles] = useState<Estudio[]>([])
+  const [formulario, setFormulario] = useState(formularioVacio)
   const [editando, setEditando] = useState<string | null>(null)
-  const [fechaEdicion, setFechaEdicion] = useState('')
-  const [motivoEdicion, setMotivoEdicion] = useState('')
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(true)
   const [enviando, setEnviando] = useState(false)
+  // Momento de la última carga: separa los turnos próximos de los pasados
+  const [ahora, setAhora] = useState(0)
 
-  const cargarAgenda = useCallback(async () => {
-    const [perfil, agenda] = await Promise.all([
-      usersApi.get<Cuenta>('/users/me'),
-      usersApi.get<Turno[]>('/appointments'),
-    ])
-    setCuenta(perfil.data)
-    setTurnos(agenda.data)
-    if (perfil.data.rol === 'paciente') {
-      const respuestaMedicos = await usersApi.get<PersonaTurno[]>('/users/medicos')
-      setMedicos(respuestaMedicos.data)
-    }
+  const cargarTurnos = useCallback(async () => {
+    const { data } = await usersApi.get<Turno[]>('/appointments')
+    setTurnos(data)
+    setAhora(Date.now())
   }, [])
 
   useEffect(() => {
     let activo = true
+    // Los controles vienen de estudios-service: si falla, la agenda igual se muestra
+    void listarProximosControles()
+      .then((lista) => { if (activo) setControles(lista) })
+      .catch(() => {})
     void Promise.resolve()
-      .then(cargarAgenda)
+      .then(cargarTurnos)
       .catch((requestError: unknown) => {
         if (activo) setError(errorMessage(requestError, 'No se pudo cargar la agenda.'))
       })
@@ -77,214 +64,201 @@ export default function Agenda() {
         if (activo) setCargando(false)
       })
     return () => { activo = false }
-  }, [cargarAgenda])
+  }, [cargarTurnos])
 
-  async function enviarSolicitud(event: FormEvent<HTMLFormElement>) {
+  function actualizarCampo(campo: keyof typeof formularioVacio, valor: string) {
+    setFormulario((actual) => ({ ...actual, [campo]: valor }))
+  }
+
+  function limpiarFormulario() {
+    setFormulario(formularioVacio)
+    setEditando(null)
+  }
+
+  async function guardarTurno(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     setEnviando(true)
+    const datos = { ...formulario, fecha: new Date(formulario.fecha).toISOString() }
     try {
-      await usersApi.post('/appointments', {
-        medicoId,
-        fecha: new Date(fecha).toISOString(),
-        motivo,
-      })
-      setFecha('')
-      setMotivo('')
-      await cargarAgenda()
+      if (editando) await usersApi.patch(`/appointments/${editando}`, datos)
+      else await usersApi.post('/appointments', datos)
+      limpiarFormulario()
+      await cargarTurnos()
     } catch (requestError) {
-      setError(errorMessage(requestError, 'No se pudo solicitar el turno.'))
+      setError(errorMessage(requestError, 'No se pudo guardar el turno.'))
     } finally {
       setEnviando(false)
     }
   }
 
-  async function cancelarTurno(id: string) {
+  function iniciarEdicion(turno: Turno) {
+    setEditando(turno._id)
+    setFormulario({
+      profesional: turno.profesional,
+      especialidad: turno.especialidad ?? '',
+      lugar: turno.lugar ?? '',
+      fecha: aFechaLocal(turno.fecha),
+      motivo: turno.motivo ?? '',
+    })
+  }
+
+  async function eliminarTurno(id: string) {
     setError('')
     try {
       await usersApi.delete(`/appointments/${id}`)
-      await cargarAgenda()
+      if (editando === id) limpiarFormulario()
+      await cargarTurnos()
     } catch (requestError) {
-      setError(errorMessage(requestError, 'No se pudo cancelar el turno.'))
+      setError(errorMessage(requestError, 'No se pudo eliminar el turno.'))
     }
   }
 
-  async function cambiarEstado(id: string, estado: 'confirmado' | 'cancelado') {
+  async function cambiarAsistencia(turno: Turno) {
     setError('')
     try {
-      await usersApi.patch(`/appointments/${id}/estado`, { estado })
-      await cargarAgenda()
+      await usersApi.patch(`/appointments/${turno._id}`, { asistido: !turno.asistido })
+      await cargarTurnos()
     } catch (requestError) {
       setError(errorMessage(requestError, 'No se pudo actualizar el turno.'))
     }
   }
 
-  function iniciarEdicion(turno: Turno) {
-    setEditando(turno._id)
-    setFechaEdicion(aFechaLocal(turno.fecha))
-    setMotivoEdicion(turno.motivo)
-  }
+  const proximos = turnos.filter((turno) => new Date(turno.fecha).getTime() >= ahora)
+  const pasados = turnos.filter((turno) => new Date(turno.fecha).getTime() < ahora).reverse()
 
-  async function guardarEdicion(id: string) {
-    setError('')
-    try {
-      await usersApi.patch(`/appointments/${id}`, {
-        fecha: new Date(fechaEdicion).toISOString(),
-        motivo: motivoEdicion,
-      })
-      setEditando(null)
-      await cargarAgenda()
-    } catch (requestError) {
-      setError(errorMessage(requestError, 'No se pudo modificar el turno.'))
-    }
+  function listaDeTurnos(lista: Turno[], pasado: boolean) {
+    return (
+      <ul className="lista-turnos">
+        {lista.map((turno) => (
+          <li className="turno" key={turno._id}>
+            <div className="turno-contenido">
+              <div className="turno-titulo">
+                <h3>{turno.profesional}</h3>
+                {turno.especialidad && <span className="estado-turno">{turno.especialidad}</span>}
+                {turno.asistido && <span className="estado-turno estado-asistido">Asistí</span>}
+              </div>
+              <p className="turno-fecha">
+                {formatearTurno(turno.fecha)}
+                {turno.lugar && ` · ${turno.lugar}`}
+              </p>
+              {turno.motivo && <p className="turno-motivo">{turno.motivo}</p>}
+            </div>
+            <div className="acciones turno-acciones">
+              {pasado && (
+                <button className="boton" type="button" onClick={() => cambiarAsistencia(turno)}>
+                  {turno.asistido ? 'Desmarcar' : 'Marcar como asistido'}
+                </button>
+              )}
+              <button className="boton" type="button" onClick={() => iniciarEdicion(turno)}>
+                Editar
+              </button>
+              <button className="boton boton-peligro" type="button" onClick={() => eliminarTurno(turno._id)}>
+                Eliminar
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    )
   }
 
   return (
     <section>
       <div className="encabezado-pagina">
         <div>
-          <p className="sobrelinea">ORGANIZÁ TU ATENCIÓN</p>
-          <h1>Agenda de médicos</h1>
+          <p className="sobrelinea">MI AGENDA</p>
+          <h1>Mis turnos</h1>
           <p className="texto-suave">
-            {cuenta?.rol === 'medico'
-              ? 'Revisá las solicitudes y administrá tus turnos.'
-              : 'Solicitá un turno y consultá tus próximas visitas.'}
+            Anotá los turnos que sacaste para tenerlos todos en un solo lugar y no olvidarte de ninguno.
           </p>
         </div>
       </div>
 
       {error && <p className="mensaje-error" role="alert">{error}</p>}
+
+      <section className="agenda-solicitud" aria-labelledby="anotar-turno">
+        <h2 id="anotar-turno">{editando ? 'Editar turno' : 'Anotar un turno'}</h2>
+        <form className="formulario agenda-formulario" onSubmit={guardarTurno}>
+          <label htmlFor="turno-profesional">Profesional</label>
+          <input
+            id="turno-profesional"
+            maxLength={120}
+            placeholder="Ej.: Dra. Paula Ríos"
+            required
+            value={formulario.profesional}
+            onChange={(event) => actualizarCampo('profesional', event.target.value)}
+          />
+          <label htmlFor="turno-especialidad">Especialidad</label>
+          <input
+            id="turno-especialidad"
+            maxLength={120}
+            placeholder="Ej.: Cardiología"
+            value={formulario.especialidad}
+            onChange={(event) => actualizarCampo('especialidad', event.target.value)}
+          />
+          <label htmlFor="turno-lugar">Lugar</label>
+          <input
+            id="turno-lugar"
+            maxLength={200}
+            placeholder="Ej.: Clínica San Martín, consultorio 4"
+            value={formulario.lugar}
+            onChange={(event) => actualizarCampo('lugar', event.target.value)}
+          />
+          <label htmlFor="turno-fecha">Fecha y hora</label>
+          <input
+            id="turno-fecha"
+            type="datetime-local"
+            required
+            value={formulario.fecha}
+            onChange={(event) => actualizarCampo('fecha', event.target.value)}
+          />
+          <label htmlFor="turno-motivo">Motivo o notas</label>
+          <textarea
+            id="turno-motivo"
+            maxLength={500}
+            rows={3}
+            placeholder="Ej.: Llevar el electrocardiograma"
+            value={formulario.motivo}
+            onChange={(event) => actualizarCampo('motivo', event.target.value)}
+          />
+          <div className="acciones">
+            <button className="boton boton-primario" type="submit" disabled={enviando}>
+              {enviando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Guardar turno'}
+            </button>
+            {editando && (
+              <button className="boton" type="button" onClick={limpiarFormulario}>
+                Descartar
+              </button>
+            )}
+          </div>
+        </form>
+      </section>
+
+      <div className="agenda-controles">
+        <ProximosControles controles={controles} cargando={cargando} />
+      </div>
+
       {cargando && <p role="status">Cargando agenda…</p>}
 
-      {!cargando && cuenta?.rol === 'paciente' && (
-        <section className="agenda-solicitud" aria-labelledby="solicitar-turno">
-          <h2 id="solicitar-turno">Solicitar un turno</h2>
-          {medicos.length === 0 ? (
-            <p className="texto-suave">Todavía no hay médicos registrados para solicitar un turno.</p>
+      {!cargando && (
+        <section className="agenda-listado" aria-labelledby="proximos-turnos">
+          <h2 id="proximos-turnos">Próximos turnos</h2>
+          {proximos.length === 0 ? (
+            <div className="estado-vacio">
+              <h3>No tenés turnos próximos</h3>
+              <p>Los turnos que anotes aparecerán en esta sección, ordenados por fecha.</p>
+            </div>
           ) : (
-            <form className="formulario agenda-formulario" onSubmit={enviarSolicitud}>
-              <label htmlFor="turno-medico">Médico</label>
-              <select
-                id="turno-medico"
-                required
-                value={medicoId}
-                onChange={(event) => setMedicoId(event.target.value)}
-              >
-                <option value="">Seleccioná un médico</option>
-                {medicos.map((medico) => (
-                  <option key={medico._id} value={medico._id}>
-                    {medico.nombre}
-                  </option>
-                ))}
-              </select>
-              <label htmlFor="turno-fecha">Fecha y hora</label>
-              <input
-                id="turno-fecha"
-                type="datetime-local"
-                min={fechaLocalMinima()}
-                required
-                value={fecha}
-                onChange={(event) => setFecha(event.target.value)}
-              />
-              <label htmlFor="turno-motivo">Motivo de consulta</label>
-              <textarea
-                id="turno-motivo"
-                maxLength={500}
-                required
-                rows={3}
-                value={motivo}
-                onChange={(event) => setMotivo(event.target.value)}
-              />
-              <button className="boton boton-primario" type="submit" disabled={enviando}>
-                {enviando ? 'Solicitando…' : 'Solicitar turno'}
-              </button>
-            </form>
+            listaDeTurnos(proximos, false)
           )}
         </section>
       )}
 
-      {!cargando && (
-        <section className="agenda-listado" aria-labelledby="mis-turnos">
-          <h2 id="mis-turnos">{cuenta?.rol === 'medico' ? 'Turnos solicitados' : 'Mis turnos'}</h2>
-          {turnos.length === 0 ? (
-            <div className="estado-vacio">
-              <h3>No hay turnos en la agenda</h3>
-              <p>Los turnos nuevos aparecerán en esta sección.</p>
-            </div>
-          ) : (
-            <ul className="lista-turnos">
-              {turnos.map((turno) => (
-                <li className="turno" key={turno._id}>
-                  {editando === turno._id ? (
-                    <div className="formulario turno-edicion">
-                      <label htmlFor={`fecha-${turno._id}`}>Fecha y hora</label>
-                      <input
-                        id={`fecha-${turno._id}`}
-                        type="datetime-local"
-                        min={fechaLocalMinima()}
-                        value={fechaEdicion}
-                        onChange={(event) => setFechaEdicion(event.target.value)}
-                      />
-                      <label htmlFor={`motivo-${turno._id}`}>Motivo</label>
-                      <textarea
-                        id={`motivo-${turno._id}`}
-                        maxLength={500}
-                        rows={2}
-                        value={motivoEdicion}
-                        onChange={(event) => setMotivoEdicion(event.target.value)}
-                      />
-                      <div className="acciones">
-                        <button className="boton boton-primario" type="button" onClick={() => guardarEdicion(turno._id)}>
-                          Guardar cambios
-                        </button>
-                        <button className="boton" type="button" onClick={() => setEditando(null)}>
-                          Descartar
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="turno-contenido">
-                        <div className="turno-titulo">
-                          <h3>{cuenta?.rol === 'medico' ? personaNombre(turno.pacienteId) : personaNombre(turno.medicoId)}</h3>
-                          <span className={`estado-turno estado-${turno.estado}`}>{turno.estado}</span>
-                        </div>
-                        <p className="turno-fecha">
-                          {new Intl.DateTimeFormat('es-AR', {
-                            dateStyle: 'long',
-                            timeStyle: 'short',
-                          }).format(new Date(turno.fecha))}
-                        </p>
-                        <p className="turno-motivo">{turno.motivo}</p>
-                      </div>
-                      <div className="acciones turno-acciones">
-                        {cuenta?.rol === 'paciente' && turno.estado === 'pendiente' && (
-                          <button className="boton" type="button" onClick={() => iniciarEdicion(turno)}>
-                            Modificar
-                          </button>
-                        )}
-                        {cuenta?.rol === 'paciente' && turno.estado !== 'cancelado' && (
-                          <button className="boton boton-peligro" type="button" onClick={() => cancelarTurno(turno._id)}>
-                            Cancelar
-                          </button>
-                        )}
-                        {cuenta?.rol === 'medico' && turno.estado === 'pendiente' && (
-                          <button className="boton boton-primario" type="button" onClick={() => cambiarEstado(turno._id, 'confirmado')}>
-                            Confirmar
-                          </button>
-                        )}
-                        {cuenta?.rol === 'medico' && turno.estado !== 'cancelado' && (
-                          <button className="boton boton-peligro" type="button" onClick={() => cambiarEstado(turno._id, 'cancelado')}>
-                            Cancelar
-                          </button>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+      {!cargando && pasados.length > 0 && (
+        <section className="agenda-listado" aria-labelledby="turnos-pasados">
+          <h2 id="turnos-pasados">Turnos pasados</h2>
+          {listaDeTurnos(pasados, true)}
         </section>
       )}
     </section>

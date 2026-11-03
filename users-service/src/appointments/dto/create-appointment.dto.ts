@@ -1,14 +1,32 @@
-import { IsDateString, IsMongoId, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import {
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateAppointmentDto {
-  @IsMongoId()
-  medicoId: string;
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  profesional: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  especialidad?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  lugar?: string;
 
   @IsDateString()
   fecha: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(500)
-  motivo: string;
+  motivo?: string;
 }

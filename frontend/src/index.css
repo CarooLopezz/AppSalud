@@ -489,8 +489,9 @@ a {
   color: var(--texto-suave);
 }
 
-/* ---- Agenda de turnos ---- */
+/* ---- Agenda personal de turnos ---- */
 .agenda-solicitud,
+.agenda-controles,
 .agenda-listado {
   margin-top: 2rem;
 }
@@ -585,12 +586,7 @@ a {
   text-transform: capitalize;
 }
 
-.estado-cancelado {
-  background: #fff0f0;
-  color: #a32c2c;
-}
-
-.estado-confirmado {
+.estado-asistido {
   background: #e7f6ef;
   color: #176346;
 }

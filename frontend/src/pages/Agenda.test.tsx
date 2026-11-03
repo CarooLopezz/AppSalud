@@ -2,22 +2,25 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Agenda from './Agenda.tsx'
 
-const { get, post, patch, remove } = vi.hoisted(() => ({
+const { get, post, patch, remove, listarProximosControles } = vi.hoisted(() => ({
   get: vi.fn(),
   post: vi.fn(),
   patch: vi.fn(),
   remove: vi.fn(),
+  listarProximosControles: vi.fn(),
 }))
 
 vi.mock('../api/clients.ts', () => ({
   usersApi: { get, post, patch, delete: remove },
 }))
 
-const medico = {
-  _id: 'doctor-1',
-  nombre: 'Dra. Ana',
-  email: 'ana@example.com',
-}
+vi.mock('../api/estudios.ts', () => ({
+  listarProximosControles,
+  formatearFecha: (fecha: string) => fecha,
+}))
+
+const manana = new Date(Date.now() + 86_400_000).toISOString()
+const ayer = new Date(Date.now() - 86_400_000).toISOString()
 
 describe('Agenda', () => {
   beforeEach(() => {
@@ -25,83 +28,95 @@ describe('Agenda', () => {
     post.mockReset()
     patch.mockReset()
     remove.mockReset()
-    get.mockImplementation((path: string) => {
-      if (path === '/users/me') {
-        return Promise.resolve({
-          data: { _id: 'patient-1', nombre: 'Paciente', email: 'p@example.com', rol: 'paciente' },
-        })
-      }
-      if (path === '/appointments') return Promise.resolve({ data: [] })
-      if (path === '/users/medicos') return Promise.resolve({ data: [medico] })
-      return Promise.reject(new Error(`Ruta inesperada: ${path}`))
-    })
+    listarProximosControles.mockReset()
+    listarProximosControles.mockResolvedValue([])
+    get.mockResolvedValue({ data: [] })
   })
 
-  it('permite solicitar un turno y lo envía con la fecha en formato ISO', async () => {
-    post.mockResolvedValue({ data: { _id: 'appointment-1' } })
-    const fecha = new Date(Date.now() + 86_400_000)
-    const fechaLocal = new Date(fecha.getTime() - fecha.getTimezoneOffset() * 60_000)
-      .toISOString()
-      .slice(0, 16)
+  it('permite anotar un turno y lo envía con la fecha en formato ISO', async () => {
+    post.mockResolvedValue({ data: { _id: 'turno-1' } })
+    const fechaLocal = '2026-11-15T10:00'
 
     render(<Agenda />)
 
-    fireEvent.change(await screen.findByLabelText('Médico'), {
-      target: { value: medico._id },
+    fireEvent.change(screen.getByLabelText('Profesional'), {
+      target: { value: 'Dra. Paula Ríos' },
+    })
+    fireEvent.change(screen.getByLabelText('Especialidad'), {
+      target: { value: 'Cardiología' },
     })
     fireEvent.change(screen.getByLabelText('Fecha y hora'), {
       target: { value: fechaLocal },
     })
-    fireEvent.change(screen.getByLabelText('Motivo de consulta'), {
-      target: { value: 'Control anual' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Solicitar turno' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar turno' }))
 
     await waitFor(() => expect(post).toHaveBeenCalledOnce())
     expect(post).toHaveBeenCalledWith('/appointments', {
-      medicoId: medico._id,
+      profesional: 'Dra. Paula Ríos',
+      especialidad: 'Cardiología',
+      lugar: '',
       fecha: new Date(fechaLocal).toISOString(),
-      motivo: 'Control anual',
+      motivo: '',
     })
   })
 
-  it('muestra la agenda vacía y el formulario de solicitud al paciente', async () => {
+  it('muestra la agenda vacía', async () => {
     render(<Agenda />)
 
-    expect(await screen.findByRole('heading', { name: 'Solicitar un turno' })).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: 'No hay turnos en la agenda' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Anotar un turno' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'No tenés turnos próximos' })).toBeInTheDocument()
   })
 
-  it('permite al médico confirmar un turno asignado', async () => {
-    get.mockImplementation((path: string) => {
-      if (path === '/users/me') {
-        return Promise.resolve({
-          data: { _id: medico._id, nombre: medico.nombre, email: medico.email, rol: 'medico' },
-        })
-      }
-      if (path === '/appointments') {
-        return Promise.resolve({
-          data: [{
-            _id: 'appointment-1',
-            medicoId: medico,
-            pacienteId: { _id: 'patient-1', nombre: 'Paciente Uno', email: 'p@example.com' },
-            fecha: new Date(Date.now() + 86_400_000).toISOString(),
-            motivo: 'Control',
-            estado: 'pendiente',
-          }],
-        })
-      }
-      return Promise.reject(new Error(`Ruta inesperada: ${path}`))
+  it('separa los turnos próximos de los pasados', async () => {
+    get.mockResolvedValue({
+      data: [
+        { _id: 'turno-1', profesional: 'Dr. Pasado', fecha: ayer, asistido: false },
+        { _id: 'turno-2', profesional: 'Dra. Futura', fecha: manana, asistido: false },
+      ],
+    })
+
+    render(<Agenda />)
+
+    const proximos = (await screen.findByRole('heading', { name: 'Próximos turnos' })).parentElement!
+    const pasados = screen.getByRole('heading', { name: 'Turnos pasados' }).parentElement!
+    expect(proximos).toHaveTextContent('Dra. Futura')
+    expect(proximos).not.toHaveTextContent('Dr. Pasado')
+    expect(pasados).toHaveTextContent('Dr. Pasado')
+  })
+
+  it('permite marcar un turno pasado como asistido', async () => {
+    get.mockResolvedValue({
+      data: [{ _id: 'turno-1', profesional: 'Dr. Sosa', fecha: ayer, asistido: false }],
     })
     patch.mockResolvedValue({ data: {} })
 
     render(<Agenda />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Confirmar' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Marcar como asistido' }))
 
     await waitFor(() => {
-      expect(patch).toHaveBeenCalledWith('/appointments/appointment-1/estado', {
-        estado: 'confirmado',
-      })
+      expect(patch).toHaveBeenCalledWith('/appointments/turno-1', { asistido: true })
     })
+  })
+
+  it('permite eliminar un turno', async () => {
+    get.mockResolvedValue({
+      data: [{ _id: 'turno-1', profesional: 'Dr. Sosa', fecha: manana, asistido: false }],
+    })
+    remove.mockResolvedValue({ data: {} })
+
+    render(<Agenda />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Eliminar' }))
+
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('/appointments/turno-1'))
+  })
+
+  it('muestra los próximos controles de los estudios', async () => {
+    listarProximosControles.mockResolvedValue([
+      { id: 'e-1', tipo: 'Ecografía tiroidea', especialidad: 'Endocrinología', medico: 'Dr. Ríos', fecha: '2026-06-20', proximoControl: '2026-12-20' },
+    ])
+
+    render(<Agenda />)
+
+    expect(await screen.findByText('Ecografía tiroidea')).toBeInTheDocument()
   })
 })

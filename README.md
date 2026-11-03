@@ -7,7 +7,7 @@ Integrantes: Adriana Antunes (Usuarios, Médicos y Agenda), Iara Fernández (Est
 ## Qué hace
 - **Cuentas:** registro e inicio de sesión con contraseña encriptada (bcrypt) y token JWT.
 - **Médicos:** directorio de los profesionales registrados.
-- **Agenda:** turnos entre pacientes y médicos.
+- **Agenda:** cada persona anota sus turnos médicos y ve sus próximos controles en un solo lugar.
 - **Estudios:** cada paciente guarda y consulta sus estudios médicos.
 - **Recetas:** recetas y medicamentos, con archivo adjunto y alertas de recetas por vencer.
 
@@ -105,9 +105,10 @@ Los primeros intentos dan `401` (contraseña incorrecta) y a partir del sexto da
 
 ### Agenda (users-service)
 - La agenda está en `/agenda` y requiere iniciar sesión.
-- Los pacientes solicitan turnos, consultan los propios, modifican solicitudes pendientes y cancelan turnos. Los médicos consultan sus turnos y los confirman o cancelan.
-- Endpoints protegidos: `GET /appointments`, `GET /appointments/:id`, `POST /appointments`, `PATCH /appointments/:id`, `PATCH /appointments/:id/estado` y `DELETE /appointments/:id`.
-- No se permite reservar un horario ya ocupado para el mismo médico; los turnos cancelados se conservan para auditoría.
+- Es una agenda personal: la persona anota los turnos que ya sacó (por teléfono, en la clínica, etc.) con `profesional`, `especialidad`, `lugar`, `fecha` y `motivo`. El profesional no necesita tener cuenta en la app.
+- Muestra los próximos turnos ordenados por fecha, los turnos pasados (se pueden marcar como asistidos) y los próximos controles de los estudios.
+- Cada usuario ve y modifica solo sus propios turnos.
+- Endpoints protegidos: `GET /appointments`, `GET /appointments/:id`, `POST /appointments`, `PATCH /appointments/:id` y `DELETE /appointments/:id`.
 
 ### Estudios (estudios-service)
 - API REST protegida con JWT: `POST /estudios`, `GET /estudios`, `GET /estudios/:id`, `PATCH /estudios/:id`, `DELETE /estudios/:id`.
@@ -134,7 +135,7 @@ docker compose logs -f users-service estudios-service recetas-service
 ```
 
 ## Datos de ejemplo (seed)
-Carga usuarios, medicamentos, estudios y recetas de ejemplo para probar la app. Se puede correr varias veces: no duplica nada, actualiza los usuarios y medicamentos de ejemplo y reemplaza sus estudios y recetas.
+Carga usuarios, medicamentos, estudios, recetas y turnos de ejemplo para probar la app. Se puede correr varias veces: no duplica nada, actualiza los usuarios y medicamentos de ejemplo y reemplaza sus estudios, recetas y turnos.
 
 ```bash
 # Con Docker (con mongo levantado)
@@ -148,8 +149,8 @@ Usuarios de ejemplo, todos con contraseña `demo1234`:
 
 | Email | Rol | Tiene |
 |---|---|---|
-| ana@appsalud.com | paciente | 3 estudios, 2 recetas |
-| juan@appsalud.com | paciente | 2 estudios, 2 recetas |
+| ana@appsalud.com | paciente | 3 estudios, 2 recetas, 2 turnos |
+| juan@appsalud.com | paciente | 2 estudios, 2 recetas, 1 turno |
 | laura.mendez@appsalud.com | medico | — |
 
 Carga en las mismas bases que usa el docker-compose: `appsalud_users`, `appsalud_estudios` y `appsalud_recetas`. Si corrés los servicios sin Docker, usá esos mismos nombres en su `MONGO_URI`, o cambialos en el seed con `MONGO_URL`, `USERS_DB`, `ESTUDIOS_DB` y `RECETAS_DB`.

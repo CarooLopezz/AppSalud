@@ -2,14 +2,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
 import { User } from '../users/schemas/user.schema.js';
 
-export enum EstadoTurno {
-  PENDIENTE = 'pendiente',
-  CONFIRMADO = 'confirmado',
-  CANCELADO = 'cancelado',
-}
-
 export type AppointmentDocument = HydratedDocument<Appointment>;
 
+// Turno que la persona anota en su agenda personal (lo sacó por teléfono,
+// en la clínica, etc.). El profesional no necesita tener cuenta en la app.
 @Schema({ timestamps: true })
 export class Appointment {
   @Prop({
@@ -18,37 +14,25 @@ export class Appointment {
     required: true,
     index: true,
   })
-  pacienteId: Types.ObjectId;
+  usuarioId: Types.ObjectId;
 
-  @Prop({
-    type: MongooseSchema.Types.ObjectId,
-    ref: User.name,
-    required: true,
-    index: true,
-  })
-  medicoId: Types.ObjectId;
+  @Prop({ required: true, trim: true, maxlength: 120 })
+  profesional: string;
+
+  @Prop({ trim: true, maxlength: 120 })
+  especialidad?: string;
+
+  @Prop({ trim: true, maxlength: 200 })
+  lugar?: string;
 
   @Prop({ type: Date, required: true })
   fecha: Date;
 
-  @Prop({ required: true, trim: true, maxlength: 500 })
-  motivo: string;
+  @Prop({ trim: true, maxlength: 500 })
+  motivo?: string;
 
-  @Prop({
-    type: String,
-    enum: Object.values(EstadoTurno),
-    default: EstadoTurno.PENDIENTE,
-  })
-  estado: EstadoTurno;
+  @Prop({ default: false })
+  asistido: boolean;
 }
 
 export const AppointmentSchema = SchemaFactory.createForClass(Appointment);
-AppointmentSchema.index(
-  { medicoId: 1, fecha: 1 },
-  {
-    unique: true,
-    partialFilterExpression: {
-      estado: { $in: [EstadoTurno.PENDIENTE, EstadoTurno.CONFIRMADO] },
-    },
-  },
-);

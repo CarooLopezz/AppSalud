@@ -1,6 +1,6 @@
 // Carga datos iniciales de ejemplo en las tres bases de AppSalud.
 // Se puede correr varias veces: actualiza los usuarios y medicamentos de
-// ejemplo y reemplaza sus estudios y recetas, sin duplicar nada.
+// ejemplo y reemplaza sus estudios, recetas y turnos, sin duplicar nada.
 import bcrypt from 'bcryptjs'
 import { MongoClient } from 'mongodb'
 import { pathToFileURL } from 'node:url'
@@ -127,6 +127,38 @@ export const recetasPorPaciente = {
   ],
 }
 
+// Turnos que cada paciente anotó en su agenda personal
+export const turnosPorPaciente = {
+  'ana@appsalud.com': [
+    {
+      profesional: 'Dra. Paula Ríos',
+      especialidad: 'Endocrinología',
+      lugar: 'Clínica San Martín, consultorio 4',
+      fecha: '2026-12-18T10:30:00-03:00',
+      motivo: 'Llevar la ecografía tiroidea.',
+      asistido: false,
+    },
+    {
+      profesional: 'Dr. Martín Sosa',
+      especialidad: 'Cardiología',
+      lugar: 'Hospital Italiano',
+      fecha: '2026-08-10T09:00:00-03:00',
+      motivo: 'Revisar el electrocardiograma.',
+      asistido: true,
+    },
+  ],
+  'juan@appsalud.com': [
+    {
+      profesional: 'Dra. Laura Méndez',
+      especialidad: 'Clínica médica',
+      lugar: 'Centro Médico Norte',
+      fecha: '2026-11-20T16:00:00-03:00',
+      motivo: 'Control de presión arterial.',
+      asistido: false,
+    },
+  ],
+}
+
 export async function seed({
   mongoUrl = 'mongodb://localhost:27017',
   usersDb = 'appsalud_users',
@@ -201,11 +233,28 @@ export async function seed({
     )
     await recetas.insertMany(nuevasRecetas)
 
+    // ---- Turnos (users-service guarda usuarioId como ObjectId) ----
+    const turnos = client.db(usersDb).collection('appointments')
+    const conTurnos = Object.keys(turnosPorPaciente).map((e) => idPorEmail[e])
+    await turnos.deleteMany({ usuarioId: { $in: conTurnos } })
+    const nuevosTurnos = Object.entries(turnosPorPaciente).flatMap(
+      ([email, lista]) =>
+        lista.map((t) => ({
+          ...t,
+          fecha: new Date(t.fecha),
+          usuarioId: idPorEmail[email],
+          createdAt: ahora,
+          updatedAt: ahora,
+        })),
+    )
+    await turnos.insertMany(nuevosTurnos)
+
     return {
       usuarios: usuarios.length,
       medicamentos: medicamentos.length,
       estudios: nuevosEstudios.length,
       recetas: nuevasRecetas.length,
+      turnos: nuevosTurnos.length,
     }
   } finally {
     await client.close()
@@ -225,6 +274,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
       console.log(`Medicamentos: ${total.medicamentos}`)
       console.log(`Estudios: ${total.estudios}`)
       console.log(`Recetas: ${total.recetas}`)
+      console.log(`Turnos: ${total.turnos}`)
       console.log(`\nListo. Usuarios de ejemplo (contraseña: ${PASSWORD}):`)
       for (const u of usuarios) console.log(`  ${u.email}  (${u.rol})`)
     })

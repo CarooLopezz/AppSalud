@@ -24,7 +24,7 @@ describe('inicio y navegación', () => {
     abrir('/')
 
     expect(screen.getByRole('heading', { name: 'Tu salud, en un solo lugar' })).toBeInTheDocument()
-    for (const titulo of ['Agenda de médicos', 'Médicos', 'Estudios', 'Recetas', 'Mi perfil']) {
+    for (const titulo of ['Mis turnos', 'Médicos', 'Estudios', 'Recetas', 'Mi perfil']) {
       expect(screen.getByRole('heading', { name: titulo })).toBeInTheDocument()
     }
   })
