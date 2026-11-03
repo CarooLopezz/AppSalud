@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { usersApi } from '../api/clients.ts'
 import { errorMessage } from '../api/errorMessage.ts'
+import CampoPassword from '../components/CampoPassword.tsx'
 
 export default function Registro() {
   const [nombre, setNombre] = useState('')
@@ -49,9 +50,8 @@ export default function Registro() {
           onChange={(event) => setEmail(event.target.value)}
         />
         <label htmlFor="registro-password">Contraseña</label>
-        <input
+        <CampoPassword
           id="registro-password"
-          type="password"
           autoComplete="new-password"
           minLength={6}
           required
