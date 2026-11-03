@@ -134,123 +134,126 @@ export default function Estudios() {
 
       {mostrarFormulario && <EstudioForm onCreado={estudioCreado} />}
 
-      <section className="seccion-estudios">
-        <h2>Historial de estudios</h2>
+      {/* Mientras se registra un estudio, el historial queda oculto */}
+      {!mostrarFormulario && (
+        <section className="seccion-estudios">
+          <h2>Historial de estudios</h2>
 
-        <form className="filtros" onSubmit={aplicarFiltros}>
-          <label>
-            Especialidad
-            <select
-              value={filtros.especialidad}
-              onChange={(e) => actualizarFiltro("especialidad", e.target.value)}
-            >
-              <option value="">Todas</option>
-              {especialidades.map((especialidad) => (
-                <option key={especialidad} value={especialidad}>
-                  {especialidad}
-                </option>
-              ))}
-            </select>
-          </label>
+          <form className="filtros" onSubmit={aplicarFiltros}>
+            <label>
+              Especialidad
+              <select
+                value={filtros.especialidad}
+                onChange={(e) => actualizarFiltro("especialidad", e.target.value)}
+              >
+                <option value="">Todas</option>
+                {especialidades.map((especialidad) => (
+                  <option key={especialidad} value={especialidad}>
+                    {especialidad}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label>
-            Tipo de estudio
-            <input
-              value={filtros.tipo}
-              onChange={(e) => actualizarFiltro("tipo", e.target.value)}
-              placeholder="Ej.: Análisis"
-            />
-          </label>
+            <label>
+              Tipo de estudio
+              <input
+                value={filtros.tipo}
+                onChange={(e) => actualizarFiltro("tipo", e.target.value)}
+                placeholder="Ej.: Análisis"
+              />
+            </label>
 
-          <label>
-            Médico
-            <input
-              value={filtros.medico}
-              onChange={(e) => actualizarFiltro("medico", e.target.value)}
-              placeholder="Nombre del médico"
-            />
-          </label>
+            <label>
+              Médico
+              <input
+                value={filtros.medico}
+                onChange={(e) => actualizarFiltro("medico", e.target.value)}
+                placeholder="Nombre del médico"
+              />
+            </label>
 
-          <label>
-            Fecha
-            <input
-              type="date"
-              value={filtros.fecha}
-              onChange={(e) => actualizarFiltro("fecha", e.target.value)}
-            />
-          </label>
+            <label>
+              Fecha
+              <input
+                type="date"
+                value={filtros.fecha}
+                onChange={(e) => actualizarFiltro("fecha", e.target.value)}
+              />
+            </label>
 
-          <div className="acciones">
-            <button className="boton boton-primario" type="submit">
-              Filtrar
-            </button>
-            <button className="boton" type="button" onClick={limpiarFiltros}>
-              Limpiar
-            </button>
-          </div>
-        </form>
+            <div className="acciones">
+              <button className="boton boton-primario" type="submit">
+                Filtrar
+              </button>
+              <button className="boton" type="button" onClick={limpiarFiltros}>
+                Limpiar
+              </button>
+            </div>
+          </form>
 
-        {error && (
-          <div className="error">
-            <p>{error}</p>
-            <button
-              className="boton"
-              type="button"
-              onClick={() => setActualizacion((v) => v + 1)}
-            >
-              Reintentar
-            </button>
-          </div>
-        )}
+          {error && (
+            <div className="error">
+              <p>{error}</p>
+              <button
+                className="boton"
+                type="button"
+                onClick={() => setActualizacion((v) => v + 1)}
+              >
+                Reintentar
+              </button>
+            </div>
+          )}
 
-        {cargando ? (
-          <p>Cargando estudios...</p>
-        ) : error ? null : estudios.length === 0 ? (
-          <div className="vacio">
-            <h3>No se encontraron estudios</h3>
-            <p>
-              Todavía no hay estudios registrados o no existen resultados para
-              los filtros seleccionados.
-            </p>
-          </div>
-        ) : (
-          <div className="lista-estudios">
-            {estudios.map((estudio) => (
-              <article className="estudio" key={estudio.id}>
-                <div className="estudio-cabecera">
-                  <div>
-                    <h3>{estudio.tipo}</h3>
-                    <span className="etiqueta">{estudio.especialidad}</span>
+          {cargando ? (
+            <p>Cargando estudios...</p>
+          ) : error ? null : estudios.length === 0 ? (
+            <div className="vacio">
+              <h3>No se encontraron estudios</h3>
+              <p>
+                Todavía no hay estudios registrados o no existen resultados para
+                los filtros seleccionados.
+              </p>
+            </div>
+          ) : (
+            <div className="lista-estudios">
+              {estudios.map((estudio) => (
+                <article className="estudio" key={estudio.id}>
+                  <div className="estudio-cabecera">
+                    <div>
+                      <h3>{estudio.tipo}</h3>
+                      <span className="etiqueta">{estudio.especialidad}</span>
+                    </div>
+                    <span>{formatearFecha(estudio.fecha)}</span>
                   </div>
-                  <span>{formatearFecha(estudio.fecha)}</span>
-                </div>
 
-                <div className="estudio-meta">
-                  <p>
-                    <strong>Médico:</strong> {estudio.medico}
-                  </p>
-                  {estudio.resultado && (
+                  <div className="estudio-meta">
                     <p>
-                      <strong>Resultado:</strong> {estudio.resultado}
+                      <strong>Médico:</strong> {estudio.medico}
                     </p>
-                  )}
-                  {estudio.notas && (
-                    <p>
-                      <strong>Notas:</strong> {estudio.notas}
-                    </p>
-                  )}
-                  {estudio.proximoControl && (
-                    <p>
-                      <strong>Próximo control:</strong>{" "}
-                      {formatearFecha(estudio.proximoControl)}
-                    </p>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
+                    {estudio.resultado && (
+                      <p>
+                        <strong>Resultado:</strong> {estudio.resultado}
+                      </p>
+                    )}
+                    {estudio.notas && (
+                      <p>
+                        <strong>Notas:</strong> {estudio.notas}
+                      </p>
+                    )}
+                    {estudio.proximoControl && (
+                      <p>
+                        <strong>Próximo control:</strong>{" "}
+                        {formatearFecha(estudio.proximoControl)}
+                      </p>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
     </main>
   );
 }
