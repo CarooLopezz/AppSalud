@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { usersApi } from '../api/clients.ts'
 import { errorMessage } from '../api/errorMessage.ts'
 import { useAuth } from '../auth/useAuth.ts'
+import CampoPassword from '../components/CampoPassword.tsx'
 
 interface LoginResponse {
   access_token: string
@@ -52,9 +53,8 @@ export default function IniciarSesion() {
           onChange={(event) => setEmail(event.target.value)}
         />
         <label htmlFor="login-password">Contraseña</label>
-        <input
+        <CampoPassword
           id="login-password"
-          type="password"
           autoComplete="current-password"
           required
           value={password}

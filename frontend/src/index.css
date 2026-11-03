@@ -489,6 +489,34 @@ a {
   color: var(--texto-suave);
 }
 
+/* ---- Contraseña con botón para mostrarla ---- */
+.campo-password {
+  position: relative;
+}
+
+.campo-password input {
+  padding-right: 3rem;
+}
+
+.boton-ver-password {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.boton-ver-password:hover,
+.boton-ver-password:focus-visible {
+  background: var(--primario-suave);
+}
+
 /* ---- Agenda personal de turnos ---- */
 .agenda-solicitud,
 .agenda-controles,
