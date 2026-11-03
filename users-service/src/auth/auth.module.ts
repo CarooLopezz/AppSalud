@@ -19,7 +19,7 @@ import { AppointmentsService } from '../appointments/appointments.service.js';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: 3600 },
+        signOptions: { expiresIn: 5400 },
       }),
     }),
   ],
