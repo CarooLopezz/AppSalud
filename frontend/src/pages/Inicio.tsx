@@ -1,6 +1,17 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../auth/useAuth.ts'
 
 const accesos = [
+  {
+    to: '/agenda',
+    titulo: 'Mis turnos',
+    texto: 'Anotá tus turnos médicos y tené a la vista los próximos controles.',
+  },
+  {
+    to: '/medicos',
+    titulo: 'Médicos',
+    texto: 'Consultá los profesionales registrados y encontrá su contacto. ',
+  },
   {
     to: '/estudios',
     titulo: 'Estudios',
@@ -14,11 +25,13 @@ const accesos = [
   {
     to: '/perfil',
     titulo: 'Mi perfil',
-    texto: 'Tus datos personales y tus médicos de cabecera.',
+    texto: 'Consultá los datos de tu cuenta.',
   },
 ]
 
 export default function Inicio() {
+  const { token } = useAuth()
+
   return (
     <>
       <section className="bienvenida">
@@ -27,14 +40,16 @@ export default function Inicio() {
           Cargá tus estudios, guardá tus recetas y anotá los datos de tus
           médicos para tenerlos siempre a mano.
         </p>
-        <div className="acciones">
-          <Link to="/registro" className="boton boton-primario">
-            Crear cuenta
-          </Link>
-          <Link to="/login" className="boton">
-            Iniciar sesión
-          </Link>
-        </div>
+        {!token && (
+          <div className="acciones">
+            <Link to="/registro" className="boton boton-primario">
+              Crear cuenta
+            </Link>
+            <Link to="/login" className="boton">
+              Iniciar sesión
+            </Link>
+          </div>
+        )}
       </section>
 
       <section aria-labelledby="accesos-titulo">

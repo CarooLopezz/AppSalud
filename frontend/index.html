@@ -6,6 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AppSalud</title>
     <meta name="description" content="Agenda personal de salud: estudios, recetas y médicos." />
+    <script>
+      // Aplica el modo claro/oscuro elegido antes de pintar, para que no parpadee al cargar
+      try {
+        const tema = localStorage.getItem('appsalud_tema')
+        if (tema === 'claro' || tema === 'oscuro') document.documentElement.dataset.tema = tema
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

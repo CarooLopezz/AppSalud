@@ -1,3 +1,4 @@
+
 import {
   Args,
   ID,
@@ -13,6 +14,7 @@ import { UpdateRecetaInput } from './dto/update-receta.input.js';
 import { MedicamentoType } from '../medicamentos/medicamento.type.js';
 import { MedicamentosService } from '../medicamentos/medicamentos.service.js';
 import type { RecetaDocument } from './schemas/receta.schema.js';
+
 @Resolver(() => RecetaType)
 export class RecetasResolver {
   constructor(
@@ -37,6 +39,11 @@ export class RecetasResolver {
     @Args('id', { type: () => ID }) id: string,
   ) {
     return this.recetasService.buscarPorId(id);
+  }
+
+  @Query(() => [RecetaType])
+  recetasPorVencer() {
+    return this.recetasService.recetasPorVencer();
   }
 
   @Mutation(() => RecetaType)

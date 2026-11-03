@@ -13,15 +13,16 @@
   --radio: 12px;
 
   color-scheme: light dark;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   color: var(--texto);
   background: var(--fondo);
   -webkit-font-smoothing: antialiased;
 }
 
+/* Sin elección del usuario se sigue al sistema; el botón ☀️/🌙 fija data-tema en <html> */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-tema="claro"]) {
     --fondo: #121918;
     --superficie: #1a2322;
     --texto: #e6eeed;
@@ -33,6 +34,24 @@
     --sobre-primario: #0c1615;
     --sombra: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
   }
+}
+
+:root[data-tema="oscuro"] {
+  --fondo: #121918;
+  --superficie: #1a2322;
+  --texto: #e6eeed;
+  --texto-suave: #9fb0ae;
+  --borde: #2b3735;
+  --primario: #3cb8ac;
+  --primario-hover: #5fcabf;
+  --primario-suave: #1d3532;
+  --sobre-primario: #0c1615;
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
+  color-scheme: dark;
+}
+
+:root[data-tema="claro"] {
+  color-scheme: light;
 }
 
 /* ---- Base ---- */
@@ -142,6 +161,41 @@ a {
   background: var(--primario-suave);
 }
 
+.sesion {
+  display: flex;
+  align-items: center;
+}
+
+.enlace-boton {
+  padding: 0.4rem 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primario);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.enlace-boton:hover {
+  background: var(--primario-suave);
+}
+
+.boton-tema {
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.boton-tema:hover {
+  background: var(--primario-suave);
+}
+
 .pie {
   padding: 1.5rem 1rem;
   text-align: center;
@@ -227,7 +281,9 @@ a {
   box-shadow: var(--sombra);
   color: var(--texto);
   text-decoration: none;
-  transition: border-color 0.15s, transform 0.15s;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
 }
 
 .tarjeta:hover {
@@ -245,6 +301,341 @@ a {
   color: var(--primario);
 }
 
+/* ---- Formularios de cuenta ---- */
+.formulario-pagina {
+  width: min(100%, 28rem);
+  margin: 1rem auto;
+  padding: 2rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.formulario-pagina h1 {
+  font-size: 1.75rem;
+}
+
+.texto-suave,
+.ayuda-campo {
+  color: var(--texto-suave);
+}
+
+.formulario {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.formulario label,
+.buscador span {
+  font-size: 0.925rem;
+  font-weight: 600;
+}
+
+.formulario input,
+.buscador input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.formulario .boton {
+  margin-top: 0.75rem;
+  cursor: pointer;
+}
+
+.formulario .boton:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.ayuda-campo {
+  font-size: 0.825rem;
+}
+
+.enlace-formulario {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  color: var(--texto-suave);
+}
+
+.mensaje-error,
+.mensaje-exito,
+.mensaje-aviso {
+  margin: 0.5rem 0;
+  padding: 0.75rem;
+  border-radius: 8px;
+}
+
+.mensaje-error {
+  color: #a32c2c;
+  background: #fff0f0;
+}
+
+.mensaje-exito {
+  color: #176346;
+  background: #e7f6ef;
+}
+
+.mensaje-aviso {
+  color: var(--texto);
+  background: var(--primario-suave);
+}
+
+/* ---- Directorio de médicos ---- */
+.encabezado-pagina {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sobrelinea {
+  margin-bottom: 0.35rem;
+  color: var(--primario);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.buscador {
+  display: grid;
+  gap: 0.4rem;
+  width: min(100%, 20rem);
+}
+
+.lista-medicos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.medico {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.medico h2 {
+  font-size: 1.05rem;
+}
+
+.medico-avatar {
+  display: grid;
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primario-suave);
+  color: var(--primario);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.perfil {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.perfil-datos {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 1.5rem;
+  margin: 0.75rem 0 0;
+}
+
+.perfil-datos dt {
+  color: var(--texto-suave);
+}
+
+.perfil-datos dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.estado-vacio {
+  padding: 2rem;
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio);
+  text-align: center;
+}
+
+.estado-vacio p {
+  margin-bottom: 0;
+  color: var(--texto-suave);
+}
+
+/* ---- Contraseña con botón para mostrarla ---- */
+.campo-password {
+  position: relative;
+}
+
+.campo-password input {
+  padding-right: 3rem;
+}
+
+.boton-ver-password {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.boton-ver-password:hover,
+.boton-ver-password:focus-visible {
+  background: var(--primario-suave);
+}
+
+/* ---- Agenda personal de turnos ---- */
+.agenda-solicitud,
+.agenda-controles,
+.agenda-listado {
+  margin-top: 2rem;
+}
+
+.agenda-solicitud {
+  padding: 1.5rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.agenda-solicitud h2,
+.agenda-listado > h2 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+}
+
+.agenda-formulario {
+  max-width: 38rem;
+}
+
+.formulario select,
+.formulario textarea {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.formulario textarea {
+  resize: vertical;
+}
+
+.lista-turnos {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.turno {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.turno-contenido {
+  min-width: 0;
+}
+
+.turno-titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.turno-titulo h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.turno-fecha {
+  margin: 0.4rem 0;
+  color: var(--texto-suave);
+  font-size: 0.925rem;
+}
+
+.turno-motivo {
+  margin: 0;
+}
+
+.estado-turno {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: var(--primario-suave);
+  color: var(--primario);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.estado-asistido {
+  background: #e7f6ef;
+  color: #176346;
+}
+
+.turno-acciones {
+  margin-top: 0;
+}
+
+.turno-edicion {
+  width: 100%;
+  margin-top: 0;
+}
+
+.boton-peligro {
+  color: #a32c2c;
+}
+
+.boton-peligro:hover {
+  border-color: #a32c2c;
+}
+
 /* ---- Avisos (en construcción / 404) ---- */
 .aviso {
   max-width: 32rem;
@@ -259,5 +650,375 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .tarjeta {
     transition: none;
+  }
+
+  @media (max-width: 600px) {
+    .barra {
+      justify-content: center;
+    }
+
+    .formulario-pagina {
+      padding: 1.25rem;
+    }
+  }
+}
+
+/* ================================
+   AP-85 - Pantalla de estudios
+================================ */
+
+.pagina-estudios {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.encabezado-pagina {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.encabezado-pagina h1 {
+  margin-bottom: 6px;
+}
+
+.encabezado-pagina p {
+  margin: 0;
+  color: var(--texto-secundario, #666);
+}
+
+.alerta {
+  padding: 20px;
+  border: 1px solid #edc477;
+  border-radius: var(--radio, 12px);
+  background: #fff7e8;
+  color: #704b13;
+}
+
+.alerta h3 {
+  margin-top: 0;
+}
+
+.alerta-ok {
+  border-color: #a8d5b5;
+  background: #edf8f0;
+  color: #285c38;
+}
+
+.alerta-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 20px;
+}
+
+.formulario,
+.seccion-estudios {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid var(--borde, #ddd);
+  border-radius: var(--radio, 12px);
+  background: var(--superficie, #fff);
+  box-shadow: var(--sombra, none);
+}
+
+.formulario h2,
+.seccion-estudios h2 {
+  margin: 0;
+}
+
+.formulario > p {
+  margin: 0;
+}
+
+.campos,
+.filtros {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.campos label,
+.filtros label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-weight: 600;
+}
+
+.campos input,
+.campos textarea,
+.filtros input,
+.filtros select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--borde, #ccc);
+  border-radius: 8px;
+  background: var(--superficie, #fff);
+  color: inherit;
+  font: inherit;
+}
+
+.campos textarea {
+  resize: vertical;
+}
+
+.boton {
+  padding: 10px 16px;
+  border: 1px solid var(--borde, #ccc);
+  border-radius: 8px;
+  background: var(--superficie, #fff);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.boton-primario {
+  border-color: #e85d75;
+  background: #e85d75;
+  color: white;
+}
+
+.boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.acciones {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+.lista-estudios {
+  display: grid;
+  gap: 14px;
+}
+
+.estudio {
+  padding: 18px;
+  border: 1px solid var(--borde, #ddd);
+  border-radius: var(--radio, 12px);
+  background: var(--superficie, #fff);
+}
+
+.estudio-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.estudio-cabecera h3 {
+  margin: 0 0 8px;
+}
+
+.etiqueta {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #e8e1f2;
+  color: #51416d;
+  font-size: 0.85rem;
+}
+
+.estudio-meta {
+  margin-top: 14px;
+}
+
+.estudio-meta p {
+  margin: 7px 0;
+}
+
+.vacio {
+  padding: 28px;
+  text-align: center;
+  border: 1px dashed var(--borde, #ccc);
+  border-radius: var(--radio, 12px);
+}
+
+.error {
+  padding: 12px;
+  border-radius: 8px;
+  background: #fdecec;
+  color: #a32929;
+}
+
+@media (max-width: 650px) {
+  .campos,
+  .filtros {
+    grid-template-columns: 1fr;
+  }
+
+  .encabezado-pagina {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .acciones {
+    flex-wrap: wrap;
+  }
+
+  .formulario,
+  .seccion-estudios {
+    padding: 16px;
+  }
+}
+
+/* ---- Recetas ---- */
+.formulario-receta,
+.receta-card {
+  padding: 1.5rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.formulario-receta,
+.receta-detalle {
+  margin-bottom: 1.5rem;
+}
+
+.receta-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.receta-card-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.receta-card-header p {
+  margin: 0.25rem 0 0;
+}
+
+.receta-fecha {
+  flex-shrink: 0;
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  background: var(--primario-suave);
+  color: var(--primario);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.cerrar {
+  padding: 0.1rem 0.6rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--texto-suave);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cerrar:hover {
+  background: var(--primario-suave);
+  color: var(--texto);
+}
+
+.formulario-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.formulario-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.formulario-grid input,
+.formulario-grid select,
+.formulario-grid textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-weight: 400;
+}
+
+.formulario-grid textarea {
+  resize: vertical;
+}
+
+.campo-completo {
+  grid-column: 1 / -1;
+}
+
+.recetas-lista {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.receta-datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.receta-datos div {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: var(--fondo);
+}
+
+.receta-datos dt,
+.indicaciones strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.receta-datos dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.indicaciones {
+  margin-top: 1rem;
+}
+
+.indicaciones p {
+  margin: 0;
+}
+
+.receta-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 650px) {
+  .formulario-grid {
+    grid-template-columns: 1fr;
   }
 }

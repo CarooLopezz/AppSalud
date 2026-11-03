@@ -1,0 +1,61 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type EstudioType {
+  id: ID!
+  tipo: String!
+  especialidad: String!
+  medico: String!
+  fecha: DateTime!
+  resultado: String
+  notas: String
+  proximoControl: DateTime
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Query {
+  estudios(filtros: FiltrarEstudiosInput): [EstudioType!]!
+  estudio(id: ID!): EstudioType!
+  controlesProximos: [EstudioType!]!
+}
+
+input FiltrarEstudiosInput {
+  especialidad: String
+  tipo: String
+  medico: String
+  fecha: DateTime
+  desde: DateTime
+  hasta: DateTime
+}
+
+type Mutation {
+  crearEstudio(input: CreateEstudioInput!): EstudioType!
+  actualizarEstudio(input: UpdateEstudioInput!): EstudioType!
+  eliminarEstudio(id: ID!): Boolean!
+}
+
+input CreateEstudioInput {
+  tipo: String!
+  especialidad: String!
+  medico: String!
+  fecha: DateTime!
+  resultado: String
+  notas: String
+  proximoControl: DateTime
+}
+
+input UpdateEstudioInput {
+  id: ID!
+  tipo: String
+  especialidad: String
+  medico: String
+  fecha: DateTime
+  resultado: String
+  notas: String
+  proximoControl: DateTime
+}

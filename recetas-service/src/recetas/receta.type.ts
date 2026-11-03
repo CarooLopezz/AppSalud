@@ -25,4 +25,10 @@ export class RecetaType {
 
   @Field()
   fecha: string;
+
+  @Field({ nullable: true })
+  archivo?: string;
+
+  @Field({ nullable: true })
+  tipoArchivo?: string;
 }
