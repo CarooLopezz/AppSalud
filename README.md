@@ -1,71 +1,208 @@
 # AppSalud – Agenda personal de salud
 
-AppSalud es una aplicación web para que cada persona tenga **su información de salud en un solo lugar**: sus estudios médicos, sus recetas y medicamentos, los datos de sus médicos y sus turnos. Cada usuario entra con su cuenta y solo ve lo suyo.
+AppSalud es una aplicación web para que cada persona tenga **toda su información de salud en un solo lugar**: estudios médicos, recetas y medicamentos, turnos y el directorio de médicos. Cada usuario entra con su propia cuenta y **solo ve y modifica sus propios datos**.
 
-Integrantes: Adriana Antunes (Usuarios, Médicos y Agenda), Iara Fernández (Estudios), Lara Magallanes (Recetas), Carolina López (Infraestructura, tests y entrega).
+**Integrantes**
 
-## Qué hace
-- **Cuentas:** registro e inicio de sesión con contraseña encriptada (bcrypt) y token JWT.
-- **Médicos:** directorio de los profesionales registrados.
-- **Agenda:** cada persona anota sus turnos médicos y ve sus próximos controles en un solo lugar.
-- **Estudios:** cada paciente guarda y consulta sus estudios médicos.
-- **Recetas:** recetas y medicamentos, con archivo adjunto y alertas de recetas por vencer.
+| Integrante | Responsable de |
+|---|---|
+| Adriana Antunes | Usuarios, login, médicos y agenda (`users-service`) |
+| Iara Fernández | Estudios médicos (`estudios-service`) |
+| Lara Magallanes | Recetas y medicamentos (`recetas-service`) |
+| Carolina López | Infraestructura (Docker, HTTPS), seguridad, tests e integración |
 
-## Arquitectura
-Son tres microservicios (NestJS + MongoDB) y un frontend (React + Vite). En producción, todo pasa por un único punto de entrada HTTPS (ver [Seguridad](#seguridad-https-y-wireshark)).
+---
 
-| Parte | Tecnología | Puerto (sin Docker) |
+## Índice
+1. [El problema](#1-el-problema)
+2. [Qué hace la aplicación](#2-qué-hace-la-aplicación)
+3. [Tecnologías](#3-tecnologías)
+4. [Arquitectura](#4-arquitectura)
+5. [Seguridad](#5-seguridad)
+6. [Patrones de diseño](#6-patrones-de-diseño)
+7. [Cómo ejecutarla](#7-cómo-ejecutarla)
+8. [Datos de ejemplo y usuarios demo](#8-datos-de-ejemplo-y-usuarios-demo)
+9. [Documentación de la API (Swagger y GraphQL)](#9-documentación-de-la-api-swagger-y-graphql)
+10. [Tests](#10-tests)
+11. [Detalle de cada módulo](#11-detalle-de-cada-módulo)
+12. [Estructura del repositorio](#12-estructura-del-repositorio)
+13. [Forma de trabajo del equipo](#13-forma-de-trabajo-del-equipo)
+
+---
+
+## 1. El problema
+
+La información de salud de una persona está **fragmentada**. Los estudios quedan en distintos laboratorios, las recetas vienen de distintos médicos y los turnos se reparten entre varias instituciones. La persona termina con carpetas en papel, fotos sueltas en el teléfono y datos que recuerda de memoria. Eso trae consecuencias concretas: estudios que se repiten, errores en la medicación, controles que se pasan de fecha y datos sensibles que circulan por chats o correos sin protección.
+
+**Objetivo:** darle a cada persona un lugar propio y seguro donde reunir y consultar su información de salud, con la garantía de que nadie más puede ver sus datos.
+
+El análisis completo está en [docs/PROBLEMATICA.md](docs/PROBLEMATICA.md).
+
+## 2. Qué hace la aplicación
+
+| Módulo | Funcionalidades |
+|---|---|
+| **Cuentas** | Registro, inicio de sesión y cierre de sesión. Las contraseñas se guardan encriptadas y la sesión se mantiene con un token JWT que dura una hora y media; al vencer, la app avisa y pide volver a ingresar. Incluye la pantalla *Mi perfil*. |
+| **Médicos** | Directorio de los profesionales registrados en la app. |
+| **Agenda** | Cada persona anota sus turnos (profesional, especialidad, lugar, fecha y motivo), los ve ordenados y marca los que ya pasaron como asistidos. También muestra los próximos controles de sus estudios. |
+| **Estudios** | Alta, consulta, edición y baja de estudios médicos (tipo, especialidad, médico, fecha, resultado, notas y próximo control), con búsqueda y filtros. |
+| **Recetas** | Recetas asociadas a medicamentos, con archivo adjunto (PDF o imagen) y **alerta de recetas próximas a vencer**. |
+| **Interfaz** | Modo claro y oscuro, botón para mostrar u ocultar la contraseña, rutas protegidas y mensajes de error claros. |
+
+## 3. Tecnologías
+
+| Tecnología | Para qué se usa |
+|---|---|
+| **TypeScript** | Lenguaje de todo el proyecto, tanto del backend como del frontend. El tipado evita errores antes de ejecutar. |
+| **NestJS 12** (Node.js) | Framework de los tres microservicios del backend. Organiza el código en módulos, controladores y servicios, con inyección de dependencias. |
+| **MongoDB 7 + Mongoose** | Base de datos NoSQL. Cada microservicio tiene su propia base (`appsalud_users`, `appsalud_estudios`, `appsalud_recetas`). |
+| **REST** | Estilo de API de `users-service` y `estudios-service`. |
+| **GraphQL (Apollo Server)** | API de `recetas-service`, y también de `estudios-service` como alternativa a REST. El cliente pide exactamente los campos que necesita. |
+| **JWT + Passport** | Autenticación: el login devuelve un token firmado que se envía en cada pedido (`Authorization: Bearer ...`). |
+| **bcrypt** | Encriptado (hash) de las contraseñas antes de guardarlas. |
+| **class-validator** | Validación de los datos que llegan a la API, por ejemplo un email válido o una contraseña de al menos 6 caracteres. |
+| **@nestjs/throttler** | Límite de intentos en el login (protección contra fuerza bruta). |
+| **Swagger / OpenAPI** | Documentación interactiva de la API, desde donde también se puede probar. |
+| **React 19 + Vite** | Frontend (SPA). Vite compila y sirve la aplicación en desarrollo. |
+| **React Router** | Navegación entre pantallas y rutas protegidas (sin sesión, redirige al login). |
+| **Axios** | Cliente HTTP del frontend. Agrega el token automáticamente a cada pedido. |
+| **Docker + Docker Compose** | Levanta todo el sistema (base de datos, tres servicios y frontend) con un solo comando. |
+| **nginx** | Servidor web del frontend y **puerta de entrada única** con HTTPS. Redirige cada `/api/...` al microservicio que corresponde. |
+| **mkcert** | Certificado HTTPS de confianza para desarrollo local (el candado del navegador). |
+| **Vitest, Supertest y Testing Library** | Tests unitarios, end-to-end (e2e) y de pantallas. |
+| **Wireshark / tshark** | Verificación de que la información viaja cifrada por la red. |
+| **Git + GitHub + Jira** | Control de versiones con ramas y pull requests, y gestión de tareas (los códigos `AP-xx` de los commits). |
+
+## 4. Arquitectura
+
+AppSalud está construida con **microservicios**: cada parte del negocio es un servicio independiente, con su propio código y su propia base de datos. Todos quedan detrás de una única puerta de entrada HTTPS.
+
+```
+                         Navegador del usuario
+                                  │
+                          HTTPS (puerto 443)
+                                  │
+                ┌─────────────────▼─────────────────┐
+                │   nginx (contenedor "frontend")   │
+                │  - Sirve la app React             │
+                │  - HTTP (80) → redirige a HTTPS   │
+                │  - Reenvía /api/* a cada servicio │
+                └───┬──────────────┬─────────────┬──┘
+     /api/users     │ /api/estudios│ /api/recetas│      (red interna de Docker,
+                    ▼              ▼             ▼       no accesible desde afuera)
+          ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+          │users-service │ │estudios-serv.│ │recetas-serv. │
+          │ NestJS REST  │ │ REST+GraphQL │ │NestJS GraphQL│
+          │ :3001        │ │ :3002        │ │ :3003        │
+          └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
+                 ▼                ▼                ▼
+          ┌─────────────────────────────────────────────────┐
+          │ MongoDB: appsalud_users · appsalud_estudios ·    │
+          │          appsalud_recetas                        │
+          └─────────────────────────────────────────────────┘
+```
+
+| Servicio | Responsabilidad | API |
 |---|---|---|
-| users-service (usuarios, médicos, agenda, login) | NestJS REST | 3001 |
-| estudios-service | NestJS REST | 3002 |
-| recetas-service | NestJS GraphQL | 3003 |
-| frontend | React + Vite | 5173 |
-| mongo | MongoDB | 27017 |
+| `users-service` | Usuarios, login (emite el JWT), directorio de médicos y agenda de turnos | REST |
+| `estudios-service` | Estudios médicos y próximos controles | REST y GraphQL |
+| `recetas-service` | Recetas, medicamentos y alertas de vencimiento | GraphQL |
+| `frontend` | Interfaz web (React) y puerta de entrada (nginx) | — |
+| `mongo` | Base de datos | — |
 
-## Cómo empezar (desarrollo)
-1. Clonar el repo y pasarse a dev: `git checkout dev`
-2. Crear tu rama: `git checkout -b tu-nombre/tu-modulo`
-3. Instalar en tu carpeta y en `frontend`: `npm install`
-4. Levantar Mongo: `docker compose up -d mongo`
-5. Correr tu servicio: `npm run start:dev` (y el frontend con `npm run dev`)
+**Cómo se conectan:** el usuario inicia sesión en `users-service`, que le devuelve un token JWT. El frontend guarda ese token y lo manda en cada pedido a los otros servicios. Como todos comparten la misma clave secreta (`JWT_SECRET`), `estudios-service` puede verificar el token por su cuenta, sin consultar a `users-service`, y saber qué usuario hace el pedido.
 
-> En este modo los servicios quedan en `http://localhost:3001-3003`. Es solo para desarrollar; **la demo y la entrega se hacen con Docker** (HTTPS).
+**Por qué microservicios:** cada integrante pudo desarrollar y probar su módulo de forma independiente. Además, si un servicio falla, los demás siguen funcionando, y cada uno puede escalar o cambiar de tecnología sin afectar al resto. Por ejemplo, recetas usa GraphQL y usuarios usa REST.
 
-## Levantar todo con Docker
-Requiere Docker Desktop abierto.
+## 5. Seguridad
+
+En una aplicación de salud, proteger los datos es parte del problema que se resuelve. Estas son las medidas implementadas:
+
+| Medida | Cómo se implementó | Cómo se verifica |
+|---|---|---|
+| **Contraseñas encriptadas** | Se guardan con hash **bcrypt** y nunca se devuelven en ninguna respuesta. | Tests e2e de usuarios y del seed |
+| **Comunicación cifrada (HTTPS)** | nginx atiende con TLS 1.2/1.3. HTTP redirige a HTTPS y el encabezado HSTS obliga al navegador a usar siempre HTTPS. | Test con Wireshark (ver abajo) |
+| **Servicios no expuestos** | Los puertos 3001 a 3003 no se publican: desde afuera solo se llega pasando por nginx. | Test con Wireshark |
+| **Autenticación con JWT** | Las rutas privadas exigen un token válido. El token vence a la hora y media. | Tests e2e |
+| **Aislamiento entre usuarios** | Cada dato queda asociado al usuario del token: nadie puede ver, editar ni borrar los datos de otra persona. | Tests e2e de estudios |
+| **Protección contra fuerza bruta** | Máximo **5 intentos de login por minuto** por IP. Al superarlo, la API responde **429 Too Many Requests**. | Test `rate-limit.e2e-spec.ts` |
+| **Roles** | El registro público siempre crea cuentas de `paciente`: nadie puede registrarse como `medico`. | Tests e2e |
+| **Validación de datos** | Todo lo que entra a la API se valida, y los campos no esperados se descartan. | Tests e2e |
+| **Logs sin datos sensibles** | Todos los errores quedan registrados, pero nunca se guardan el cuerpo del pedido, los headers ni los tokens. Ante un error interno, el usuario solo recibe un mensaje genérico. | Tests unitarios del filtro de errores |
+
+### Verificación con Wireshark
+Wireshark es un programa que muestra todo lo que viaja por la red; es lo que vería un atacante que espía la conexión. Para comprobarlo:
+
+1. Abrir Wireshark y elegir la interfaz **Adapter for loopback traffic capture**.
+2. Filtrar con `tcp.port == 443`.
+3. Iniciar sesión en https://localhost.
+
+Los paquetes aparecen como **TLSv1.3 – Application Data**, con el contenido ilegible: no se ven ni la contraseña ni el token. Lo mismo se comprueba de forma automática con `node --test tests/wireshark.test.mjs`.
+
+### Prueba del límite de intentos
+Con la app levantada, este script de PowerShell intenta iniciar sesión 7 veces seguidas con una contraseña incorrecta:
+
+```powershell
+'{"email":"ana@appsalud.com","password":"mala"}' | Out-File -Encoding ascii "$env:TEMP\brute.json"
+1..7 | ForEach-Object { curl.exe -k -s -o NUL -w "%{http_code}`n" -X POST https://localhost/api/users/auth/login -H "Content-Type: application/json" --data "@$env:TEMP\brute.json" }
+```
+
+Resultado: `401 401 401 401 401 429 429`. Los cinco primeros intentos se rechazan por contraseña incorrecta y, a partir del sexto, el servidor deja de aceptar intentos. También se puede ver desde Swagger o desde la pantalla de login.
+
+## 6. Patrones de diseño
+
+| Patrón | Dónde se aplica |
+|---|---|
+| **Microservicios + API Gateway** | Tres servicios independientes detrás de nginx, que funciona como puerta de entrada única ([frontend/nginx.conf](frontend/nginx.conf)). |
+| **Arquitectura en capas** (Controller → Service → Model) | En cada servicio, el *controller* (o *resolver* en GraphQL) recibe el pedido, el *service* tiene la lógica y el *model* de Mongoose accede a la base. |
+| **Inyección de dependencias** | NestJS crea los servicios y se los pasa a quien los necesita por el constructor. Ejemplo: [estudios.service.ts](estudios-service/src/estudios/estudios.service.ts). |
+| **Repository** | El `Model` de Mongoose, inyectado con `@InjectModel`, encapsula el acceso a la base de datos. |
+| **Strategy** | La autenticación usa una estrategia de Passport intercambiable: [jwt.strategy.ts](estudios-service/src/auth/jwt.strategy.ts). |
+| **Guard** (cadena de filtros) | Antes de llegar al controlador, el pedido pasa por *guards* que comprueban el token y el límite de intentos ([auth.controller.ts](users-service/src/auth/auth.controller.ts)). |
+| **Decorator** | `@Controller`, `@Get`, `@UseGuards`, `@ApiTags` y el decorador propio `@CurrentUser` ([current-user.decorator.ts](estudios-service/src/auth/current-user.decorator.ts)). |
+| **DTO** (Data Transfer Object) | Clases que definen y validan los datos de entrada, en las carpetas `dto/` de cada servicio. |
+| **Factory** | `useFactory` arma la configuración a partir de variables de entorno ([app.module.ts](users-service/src/app.module.ts)). En el frontend, `crearCliente()` construye los clientes HTTP ([clients.ts](frontend/src/api/clients.ts)). |
+| **Manejador global de errores** | Un único *exception filter* atrapa y registra todos los errores ([todos-los-errores.filter.ts](users-service/src/common/todos-los-errores.filter.ts)). |
+| **Interceptor** | En el frontend, cada pedido lleva el token automáticamente; si el servidor responde 401, se cierra la sesión ([clients.ts](frontend/src/api/clients.ts)). |
+| **Observer** | Cuando la sesión vence se dispara un evento, y la app lo escucha para redirigir al login ([AuthContext.tsx](frontend/src/auth/AuthContext.tsx)). |
+| **Provider / Context** | La sesión del usuario está disponible en toda la app de React mediante un *Context*. |
+
+## 7. Cómo ejecutarla
+
+**Requisitos:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y abierto.
 
 ```bash
-docker compose up -d --build   # construye y levanta mongo, los 3 servicios y el frontend
-docker compose ps              # ver estado
-docker compose logs -f users-service
-docker compose down            # apagar (agregar -v para borrar los datos de Mongo)
+git clone https://github.com/CarooLopezz/AppSalud.git
+cd AppSalud
+docker compose up -d --build     # construye y levanta todo
+docker compose run --rm seed     # carga los datos de ejemplo
 ```
 
-La app queda en **https://localhost**. Es la única puerta de entrada: el nginx del frontend sirve la app y reenvía `/api/users`, `/api/estudios` y `/api/recetas` a cada servicio. Los servicios no publican sus puertos (3001-3003), así que desde afuera de Docker solo se llega a ellos por HTTPS. Si entrás por `http://localhost`, te redirige a HTTPS.
+Abrir **https://localhost**.
 
-El certificado es autofirmado y se genera solo la primera vez. Por eso el navegador avisa que la conexión "no es privada": tocá **Configuración avanzada → Continuar a localhost** (o usá [mkcert](#certificado-de-confianza-candado-en-el-navegador) para el candado).
+> El certificado HTTPS es autofirmado, así que el navegador muestra "La conexión no es privada". Hay que tocar **Configuración avanzada → Continuar a localhost**. La conexión está igualmente cifrada. Para que aparezca el candado, ver [Certificado de confianza](#certificado-de-confianza-opcional).
 
-Dentro de Docker cada servicio recibe `PORT` y `MONGO_URI` (`mongodb://mongo:27017/appsalud_<servicio>`) como variables de entorno. `users-service` y `estudios-service` además reciben `JWT_SECRET`: se toma de un `.env` en la raíz del proyecto, o usa `clave_de_desarrollo` si no existe (solo para desarrollo).
+Otros comandos útiles:
 
-Para cargar datos de ejemplo, ver [Datos de ejemplo (seed)](#datos-de-ejemplo-seed).
-
-## Seguridad: HTTPS y Wireshark
-Con HTTPS, la contraseña del login y el token viajan cifrados: en Wireshark solo se ve "TLS Application Data". En la base, las contraseñas se guardan encriptadas con bcrypt.
-
-**Test automático** (con la app levantada en Docker y Wireshark instalado). Captura el tráfico mientras se registra un usuario, hace login y pide sus estudios, y verifica que ni la contraseña, ni el email, ni el token aparezcan en la captura. También verifica que por HTTP solo haya una redirección y que los puertos 3001-3003 estén cerrados:
-
-```
-node --test tests/wireshark.test.mjs
+```bash
+docker compose ps                     # ver el estado de los contenedores
+docker compose logs -f users-service  # ver los logs de un servicio
+docker compose down                   # apagar (agregar -v para borrar los datos)
 ```
 
-**Para verlo a mano en Wireshark:** elegí la interfaz *Adapter for loopback traffic capture*, filtrá con `tcp.port == 443`, hacé login en https://localhost y fijate que los paquetes digan *TLS* y *Application Data*, sin ningún `POST /auth/login` legible.
+### Variables de entorno
+Docker Compose ya configura todo. Solo `JWT_SECRET` (la clave para firmar los tokens) se puede definir en un archivo `.env` en la raíz; si no existe, se usa `clave_de_desarrollo`, que sirve únicamente para desarrollo.
 
-> Ojo: con `npm run start:dev` (sin Docker) los servicios siguen en `http://localhost:3001-3003` y ahí la contraseña **sí** se ve.
+| Variable | Servicio | Valor por defecto |
+|---|---|---|
+| `MONGO_URI` | los tres servicios | `mongodb://mongo:27017/appsalud_<servicio>` |
+| `JWT_SECRET` | users y estudios | `clave_de_desarrollo` |
+| `THROTTLE_LIMIT` / `THROTTLE_TTL` | users | 5 intentos / 60000 ms |
 
-### Certificado de confianza (candado en el navegador)
-Sin esto, la conexión igual está cifrada, pero el navegador muestra "No seguro" porque el certificado es autofirmado. Con [mkcert](https://github.com/FiloSottile/mkcert) se crea un certificado que tu compu reconoce como de confianza. Se hace **una vez por compu**, en PowerShell, desde la raíz del proyecto:
+### Certificado de confianza (opcional)
+Para ver el candado en el navegador, ejecutar una sola vez en PowerShell, desde la raíz del proyecto:
 
-```
+```powershell
 winget install FiloSottile.mkcert
 mkcert -install
 mkdir certs
@@ -73,112 +210,150 @@ mkcert -cert-file certs/server.crt -key-file certs/server.key localhost 127.0.0.
 docker compose restart frontend
 ```
 
-- `winget install`: después de instalarlo, abrí una terminal nueva para que reconozca el comando `mkcert`.
-- `mkcert -install`: Windows pregunta si confiás en la autoridad "mkcert": aceptá. Queda solo en tu compu.
-- La carpeta `certs/` no se sube a GitHub. Si está vacía, nginx genera el certificado autofirmado como antes.
-- Después de reiniciar, cerrá y volvé a abrir el navegador y entrá a https://localhost: tiene que aparecer el candado.
+Después hay que cerrar y volver a abrir el navegador. La carpeta `certs/` no se sube a GitHub.
 
-### Límite de intentos (fuerza bruta)
-Para que nadie pueda adivinar una contraseña probando miles de veces, `users-service` limita los intentos de `/auth/login` y `/auth/register`. Pasado el límite, responde **429 "Too many requests"** y hay que esperar.
-
-- Por defecto: **5 intentos por minuto** por IP. Se cambia con `THROTTLE_LIMIT` y `THROTTLE_TTL` (ms).
-- Detrás de nginx, el límite cuenta por la IP real de cada cliente (`trust proxy`), no a todos juntos.
-
-**Un ataque de fuerza bruta** sería mandar muchos intentos de login seguidos. Para verlo, con la app en Docker (PowerShell):
-
-```
-'{"email":"ana@appsalud.com","password":"mala"}' | Out-File -Encoding ascii "$env:TEMP\brute.json"
-1..7 | ForEach-Object { curl.exe -k -s -o NUL -w "%{http_code}`n" -X POST https://localhost/api/users/auth/login -H "Content-Type: application/json" --data "@$env:TEMP\brute.json" }
-```
-
-Los primeros intentos dan `401` (contraseña incorrecta) y a partir del sexto dan `429`: el servidor dejó de aceptarlos.
-
-> Wireshark **no** hace este ataque: solo observa el tráfico. El ataque lo manda otra herramienta o un script; Wireshark sirve para ver que, aun así, la contraseña viaja cifrada.
-
-## Módulos
-
-### Usuarios y médicos (users-service)
-- Registro: `POST /auth/register` con `nombre`, `email` y `password` (mínimo 6 caracteres). Los registros públicos tienen el rol `paciente`.
-- Inicio de sesión: `POST /auth/login`; devuelve `access_token` (JWT).
-- La documentación interactiva de Swagger está en `https://localhost/api/users/docs` con Docker, o en `http://localhost:3001/docs` al ejecutar `users-service` directamente. En Swagger, usá **Authorize** y pegá el `access_token` obtenido en el login para probar las rutas protegidas. Si ejecutás el servicio directamente, elegí el servidor local en el selector de Swagger.
-- Directorio: `GET /users/medicos` requiere `Authorization: Bearer <access_token>` y devuelve nombre y correo de las cuentas con rol `medico`.
-
-### Agenda (users-service)
-- La agenda está en `/agenda` y requiere iniciar sesión.
-- Es una agenda personal: la persona anota los turnos que ya sacó (por teléfono, en la clínica, etc.) con `profesional`, `especialidad`, `lugar`, `fecha` y `motivo`. El profesional no necesita tener cuenta en la app.
-- Muestra los próximos turnos ordenados por fecha, los turnos pasados (se pueden marcar como asistidos) y los próximos controles de los estudios.
-- Cada usuario ve y modifica solo sus propios turnos.
-- Endpoints protegidos: `GET /appointments`, `GET /appointments/:id`, `POST /appointments`, `PATCH /appointments/:id` y `DELETE /appointments/:id`.
-
-### Estudios (estudios-service)
-- API REST protegida con JWT: `POST /estudios`, `GET /estudios`, `GET /estudios/:id`, `PATCH /estudios/:id`, `DELETE /estudios/:id`.
-- Cada estudio queda a nombre del usuario del token: **un usuario solo ve, edita y elimina los suyos**.
-- Guarda tipo, especialidad, médico, fecha, resultado, notas y próximo control.
-
-### Recetas (recetas-service)
-- API GraphQL en `/graphql`. Consultas: `recetas`, `receta(id)`, `recetasPorVencer`, `medicamentos`, `medicamento(id)`. Mutaciones: `crearReceta`, `actualizarReceta`, `eliminarReceta`, y las de medicamentos.
-- Cada receta se relaciona con un medicamento y puede llevar un archivo adjunto (PDF, JPG o PNG).
-- `recetasPorVencer` devuelve las recetas que vencen dentro de los próximos 3 días.
-
-## Logs de errores
-Los tres servicios anotan cada error en el log con su servicio, ruta y motivo (`src/common/todos-los-errores.filter.ts`):
-
-- **4xx** (error del que hizo el pedido: datos inválidos, sin token, no existe) → `WARN`, por ejemplo `POST /auth/login → 401: Credenciales inválidas`.
-- **5xx** (error del servidor) → `ERROR`, con el detalle completo. Al usuario solo le llega "Error interno del servidor".
-- También se anotan los errores de GraphQL (recetas-service) y los que pasan fuera de un pedido (promesas sin `catch`).
-- **Nunca** se anotan el cuerpo del pedido, los headers ni la query: en los logs no quedan contraseñas, tokens ni emails.
-
-Para verlos con Docker:
-
-```
-docker compose logs -f users-service estudios-service recetas-service
-```
-
-## Datos de ejemplo (seed)
-Carga usuarios, medicamentos, estudios, recetas y turnos de ejemplo para probar la app. Se puede correr varias veces: no duplica nada, actualiza los usuarios y medicamentos de ejemplo y reemplaza sus estudios, recetas y turnos.
+### Desarrollo sin Docker
+Para trabajar sobre un módulo:
 
 ```bash
-# Con Docker (con mongo levantado)
-docker compose run --rm seed
+docker compose up -d mongo     # solo la base de datos
+cd users-service               # o estudios-service / recetas-service
+npm install
+npm run start:dev              # http://localhost:3001 (3002 / 3003)
 
-# Sin Docker (con un Mongo local en localhost:27017)
-cd seed && npm install && npm run seed
+cd frontend
+npm install
+npm run dev                    # http://localhost:5173
 ```
 
-Usuarios de ejemplo, todos con contraseña `demo1234`:
+> En este modo los servicios usan HTTP sin cifrar. La demo y la entrega se hacen con Docker (HTTPS).
 
-| Email | Rol | Tiene |
+## 8. Datos de ejemplo y usuarios demo
+
+`docker compose run --rm seed` carga usuarios, medicamentos, estudios, recetas y turnos de ejemplo. Se puede ejecutar varias veces sin duplicar datos.
+
+Todos los usuarios tienen la contraseña **`demo1234`**:
+
+| Email | Rol | Datos cargados |
 |---|---|---|
-| ana@appsalud.com | paciente | 3 estudios, 2 recetas, 2 turnos |
-| juan@appsalud.com | paciente | 2 estudios, 2 recetas, 1 turno |
-| laura.mendez@appsalud.com | medico | — |
+| `ana@appsalud.com` | paciente | 3 estudios, 2 recetas, 2 turnos |
+| `juan@appsalud.com` | paciente | 2 estudios, 2 recetas, 1 turno |
+| `laura.mendez@appsalud.com` | médico | Aparece en el directorio de médicos |
 
-Carga en las mismas bases que usa el docker-compose: `appsalud_users`, `appsalud_estudios` y `appsalud_recetas`. Si corrés los servicios sin Docker, usá esos mismos nombres en su `MONGO_URI`, o cambialos en el seed con `MONGO_URL`, `USERS_DB`, `ESTUDIOS_DB` y `RECETAS_DB`.
+**Recorrido sugerido para la demo:**
+1. Entrar como Ana y ver sus estudios, recetas (con la alerta de vencimiento) y su agenda.
+2. Cerrar sesión, entrar como Juan y comprobar que **no ve los datos de Ana**.
+3. Abrir el directorio de médicos.
+4. Probar la API desde Swagger, incluido el límite de intentos.
 
-## Tests
-Desde la carpeta de cada parte (en PowerShell, un comando por línea). Los e2e necesitan Mongo en `localhost:27017` (por ejemplo `docker compose up -d mongo`) y usan bases `appsalud_test_*`, separadas de las reales.
+## 9. Documentación de la API (Swagger y GraphQL)
 
-| Qué | Dónde | Comando |
+Con la app levantada en Docker:
+
+| Servicio | Swagger (REST) | GraphQL |
 |---|---|---|
-| Unitarios de un servicio | `users-service`, `estudios-service`, `recetas-service` | `npm test` |
-| E2E de un servicio (levantan el servicio y le hacen pedidos) | ídem | `npm run test:e2e` |
-| Pantallas y navegación del frontend | `frontend` | `npm test` |
-| Seed | `seed` | `npm test` |
-| Tráfico de red / Wireshark (con la app en Docker) | raíz del proyecto | `node --test tests/wireshark.test.mjs` |
+| Usuarios, médicos y agenda | https://localhost/api/users/docs | — |
+| Estudios | https://localhost/api/estudios/docs | `POST https://localhost/api/estudios/graphql` |
+| Recetas | https://localhost/api/recetas/docs | `POST https://localhost/api/recetas/graphql` |
 
-Qué cubren:
-- **Usuarios y médicos:** registro y login (contraseña nunca devuelta y guardada con bcrypt, email repetido, datos inválidos, credenciales incorrectas, límite de intentos) y `GET /users/medicos` (protección con token; solo médicos, ordenados y sin contraseña; nadie se registra como médico).
-- **Estudios:** CRUD con protección por token y, sobre todo, aislamiento entre usuarios (nadie ve ni toca los estudios de otro).
-- **Recetas:** CRUD por GraphQL, relación con medicamentos, archivo adjunto y alertas de recetas por vencer.
-- **Frontend:** inicio y navegación, rutas protegidas, directorio de médicos, y los flujos de login y registro (mensajes de error, cerrar sesión).
-- **Seed:** que cargue todo, que no duplique, contraseñas con bcrypt y relaciones correctas.
-- **Red (Wireshark):** la contraseña y el token viajan cifrados; los puertos internos están cerrados.
+**Cómo probar desde Swagger** (en el de usuarios, `/api/users/docs`):
+1. Abrir `POST /auth/login`, tocar **Try it out**, escribir `{"email":"ana@appsalud.com","password":"demo1234"}` y tocar **Execute**.
+2. Copiar el `access_token` que devuelve la respuesta.
+3. Tocar **Authorize** 🔒, pegar el token y confirmar.
+4. Probar una ruta protegida, por ejemplo `GET /users/medicos`.
 
-## Frontend
-`cd frontend && npm run dev` → http://localhost:5173
+## 10. Tests
 
-- `src/App.tsx`: rutas; estudios, recetas, perfil, agenda y el directorio de médicos requieren sesión.
-- `src/components/Layout.tsx`: barra de navegación y pie, comunes a todas las pantallas.
-- `src/pages/`: pantallas de inicio, registro, inicio de sesión, directorio de médicos y agenda.
-- `src/api/clients.ts`: `usersApi`, `estudiosApi` y `recetasApi` (axios). Si hay un token en `localStorage` (`appsalud_token`) lo mandan solo como `Authorization: Bearer`. Las URLs se cambian con un `.env` (ver `frontend/.env.example`).
-- Estilos en `src/index.css`, con los colores como variables en `:root` (tiene modo oscuro).
+Cada parte tiene sus propios tests. Los e2e necesitan MongoDB levantado (`docker compose up -d mongo`) y usan bases separadas (`appsalud_test_*`), así que no tocan los datos reales.
+
+| Qué se prueba | Dónde | Comando |
+|---|---|---|
+| Unitarios de cada servicio | `users-service`, `estudios-service`, `recetas-service` | `npm test` |
+| End-to-end: levantan el servicio y le hacen pedidos reales | ídem | `npm run test:e2e` |
+| Cobertura de código | ídem | `npm run test:cov` |
+| Pantallas y navegación | `frontend` | `npm test` |
+| Carga de datos de ejemplo | `seed` | `npm test` |
+| Cifrado del tráfico de red (con la app en Docker y Wireshark instalado) | raíz | `node --test tests/wireshark.test.mjs` |
+
+**Qué cubren:**
+- **Usuarios y médicos:** registro y login (contraseña nunca devuelta y guardada con bcrypt, email repetido, datos inválidos, credenciales incorrectas), límite de intentos (429) y directorio de médicos (protegido con token, solo médicos, sin contraseñas y sin que nadie pueda registrarse como médico).
+- **Agenda:** alta, edición y baja de turnos de cada usuario.
+- **Estudios:** CRUD protegido con token y, sobre todo, **aislamiento entre usuarios**.
+- **Recetas:** CRUD por GraphQL, relación con medicamentos, archivo adjunto y alertas de vencimiento.
+- **Frontend:** navegación, rutas protegidas, login y registro con sus mensajes de error, perfil, agenda, médicos, recetas, modo claro u oscuro y botón para ver la contraseña.
+- **Seed:** que cargue todo, que no duplique datos, que use bcrypt y que las relaciones sean correctas.
+- **Red:** la contraseña, el email y el token no aparecen en la captura, HTTP solo redirige a HTTPS y los puertos internos están cerrados.
+
+## 11. Detalle de cada módulo
+
+### Usuarios, login y médicos (`users-service`, REST)
+| Método | Ruta | Descripción | Protegida |
+|---|---|---|---|
+| POST | `/auth/register` | Crea una cuenta de paciente (`nombre`, `email`, `password` de 6 caracteres o más) | No (con límite de intentos) |
+| POST | `/auth/login` | Devuelve el `access_token` (JWT) | No (con límite de intentos) |
+| GET | `/users/medicos` | Lista de médicos (nombre y email) | Sí |
+
+### Agenda (`users-service`, REST)
+Agenda personal: la persona anota los turnos que ya sacó (por teléfono, en la clínica, etc.). El profesional no necesita tener cuenta en la app. Cada usuario ve y modifica solo sus propios turnos.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/appointments` | Turnos del usuario |
+| GET | `/appointments/:id` | Un turno |
+| POST | `/appointments` | Crear un turno (`profesional`, `especialidad`, `lugar`, `fecha`, `motivo`) |
+| PATCH | `/appointments/:id` | Editar un turno o marcarlo como asistido |
+| DELETE | `/appointments/:id` | Eliminar un turno |
+
+### Estudios (`estudios-service`, REST y GraphQL)
+Todas las rutas requieren token, y cada estudio queda a nombre del usuario que lo crea.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/estudios` | Crear un estudio |
+| GET | `/estudios` | Listar los estudios propios, con filtros y búsqueda |
+| GET | `/estudios/:id` | Ver un estudio |
+| PATCH | `/estudios/:id` | Editar un estudio |
+| DELETE | `/estudios/:id` | Eliminar un estudio |
+
+Las mismas operaciones también están disponibles por GraphQL en `/graphql`.
+
+### Recetas (`recetas-service`, GraphQL)
+Todo se hace con `POST /graphql`.
+- **Consultas:** `recetas`, `receta(id)`, `recetasPorVencer` (las que vencen en los próximos 3 días), `medicamentos`, `medicamento(id)`.
+- **Mutaciones:** `crearReceta`, `actualizarReceta`, `eliminarReceta`, además de las de medicamentos.
+- Cada receta se relaciona con un medicamento y puede llevar un archivo adjunto (PDF, JPG o PNG).
+
+### Registro de errores (los tres servicios)
+- Errores **4xx** (problemas del pedido: datos inválidos, sin token, recurso inexistente): se registran como `WARN`.
+- Errores **5xx** (problemas del servidor): se registran como `ERROR` con el detalle completo. El usuario solo recibe "Error interno del servidor".
+- Para verlos: `docker compose logs -f users-service estudios-service recetas-service`.
+
+## 12. Estructura del repositorio
+
+```
+AppSalud/
+├── users-service/       Microservicio de usuarios, login, médicos y agenda (NestJS, REST)
+│   ├── src/auth/          registro, login, JWT y límite de intentos
+│   ├── src/users/         usuarios y directorio de médicos
+│   ├── src/appointments/  agenda de turnos
+│   ├── src/common/        filtro global de errores
+│   └── test/              tests e2e
+├── estudios-service/    Microservicio de estudios (NestJS, REST + GraphQL)
+├── recetas-service/     Microservicio de recetas y medicamentos (NestJS, GraphQL)
+├── frontend/            App React + Vite, y nginx (HTTPS y puerta de entrada)
+│   ├── src/pages/         pantallas
+│   ├── src/components/    componentes reutilizables
+│   ├── src/auth/          manejo de la sesión
+│   ├── src/api/           clientes HTTP hacia los servicios
+│   └── nginx.conf         configuración HTTPS y reenvío a los servicios
+├── seed/                Script de datos de ejemplo
+├── tests/               Test de tráfico de red (Wireshark)
+├── docs/                Documento de la problemática
+└── docker-compose.yml   Orquestación de todos los contenedores
+```
+
+## 13. Forma de trabajo del equipo
+
+- **Jira** para organizar las tareas. Cada tarea tiene un código `AP-xx`, que aparece en las ramas y en los commits.
+- **Git con ramas:** cada funcionalidad se desarrolla en su propia rama (`feature/...` o `fix/...`) y se integra a `dev` mediante un **pull request** en GitHub. Cuando `dev` está estable, se pasa a `main`, que es la versión de entrega.
+- Cada módulo incluye sus tests, y la documentación de la API se mantiene en Swagger.
